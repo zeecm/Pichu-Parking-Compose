@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
             val showWarning: Boolean by locationPermissionWarningViewModel.dialogActive.collectAsState()
             PichuParkingComposeTheme {
                 Column {
-                    DisplayGoogleMaps()
+                    GoogleMapView()
                     if (showWarning) {
                         LocationPermissionWarning(
                             active = true,
@@ -122,18 +122,8 @@ fun CardsPreview() {
 }
 
 @Composable
-fun DisplayGoogleMaps() {
-    val singapore = LatLng(1.35, 103.87)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singapore, 10f)
-    }
-    var uiSettings by remember { mutableStateOf(MapUiSettings(zoomControlsEnabled = false))}
-    Box {
-        GoogleMap(
-            modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState,
-            uiSettings = uiSettings,
-        )
+fun GoogleMapView() {Box {
+        DisplayGoogleMaps()
         FloatingActionButton(
             onClick = { /*TODO*/ },
             modifier = Modifier
@@ -144,6 +134,27 @@ fun DisplayGoogleMaps() {
             Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
         }
     }
+}
+
+@Composable
+fun DisplayGoogleMaps() {
+    val singapore = LatLng(1.35, 103.87)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(singapore, 10f)
+    }
+    var uiSettings by remember { mutableStateOf(MapUiSettings(zoomControlsEnabled = false))}
+    GoogleMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        uiSettings = uiSettings,
+    )
+}
+
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun MapsPreview() {
+    GoogleMapView()
 }
 
 class LocationPermissionWarningViewModel : ViewModel() {
