@@ -10,10 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "com.pichugroup.pichuparking"
-        minSdk = 33
-        targetSdk = 33
+        minSdk = 30
+        targetSdk = 30
         versionCode = 1
-        versionName = "1.0"
+        versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -29,8 +29,7 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
         }
     }
