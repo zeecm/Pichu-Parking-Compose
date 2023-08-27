@@ -6,11 +6,17 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -132,5 +141,93 @@ fun DisplayGoogleMaps(
             state = MarkerState(position = currentLatLon),
             title = "My Current Location"
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FilterChipExample() {
+    ChipVerticalGrid(
+        spacing = 7.dp,
+        modifier = Modifier
+            .padding(7.dp)
+    ) {
+        var selected by remember { mutableStateOf(false) }
+        var selected2 by remember { mutableStateOf(false) }
+        FilterChip(
+            onClick = { selected = !selected },
+            label = {
+                Text("Filter chip")
+            },
+            selected = selected,
+            leadingIcon = if (selected) {
+                {
+                    Icon(
+                        imageVector = Icons.Filled.Done,
+                        contentDescription = "Done icon",
+                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    )
+                }
+            } else {
+                null
+            },
+        )
+
+        FilterChip(
+            onClick = { selected2 = !selected2 },
+            label = {
+                Text("Filter chip 2")
+            },
+            selected = selected2,
+            leadingIcon = if (selected2) {
+                {
+                    Icon(
+                        imageVector = Icons.Filled.Done,
+                        contentDescription = "Done icon",
+                        modifier = Modifier.size(FilterChipDefaults.IconSize)
+                    )
+                }
+            } else {
+                null
+            },
+        )
+    }
+}
+
+@Composable
+fun ChipVerticalGrid(
+    modifier: Modifier = Modifier,
+    spacing: Dp,
+    content: @Composable () -> Unit
+) {
+    Layout(
+        content = content,
+        modifier = modifier
+    ) { measurables, constraints ->
+        var currentRow = 0
+        var currentOrigin = IntOffset.Zero
+        val spacingValue = spacing.toPx().toInt()
+        val placeables = measurables.map { measurable ->
+            val placeable = measurable.measure(constraints)
+
+            if (currentOrigin.x > 0f && currentOrigin.x + placeable.width > constraints.maxWidth) {
+                currentRow += 1
+                currentOrigin = currentOrigin.copy(x = 0, y = currentOrigin.y + placeable.height + spacingValue)
+            }
+
+            placeable to currentOrigin.also {
+                currentOrigin = it.copy(x = it.x + placeable.width + spacingValue)
+            }
+        }
+
+        layout(
+            width = constraints.maxWidth,
+            height = placeables.lastOrNull()?.run { first.height + second.y } ?: 0
+        ) {
+            placeables.forEach {
+                val (placeable, origin) = it
+                placeable.place(origin.x, origin.y)
+            }
+        }
     }
 }
