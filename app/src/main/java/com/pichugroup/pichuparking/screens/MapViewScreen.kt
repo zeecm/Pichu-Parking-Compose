@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,17 +21,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
@@ -57,9 +59,12 @@ fun GoogleMapViewScreen() {
     var rationaleState by remember {
         mutableStateOf<RationaleState?>(null)
     }
-    var latLon by remember { mutableStateOf(LatLon(0.0, 0.0)) }
+    var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
+    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
+    }
     Box {
-        DisplayGoogleMaps()
+        DisplayGoogleMaps(cameraPositionState = cameraPositionState, currentLatLon = currentLatLon)
         rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
         FloatingActionButton(
             onClick = {
@@ -71,12 +76,20 @@ fun GoogleMapViewScreen() {
                             CancellationTokenSource().token,
                         ).await()
                         result?.let { fetchedLocation ->
-                            latLon = LatLon(
-                                latitude = fetchedLocation.latitude,
-                                longitude = fetchedLocation.longitude
+                            currentLatLon = LatLng(
+                                fetchedLocation.latitude,
+                                fetchedLocation.longitude
                             )
                         }
                     }
+                    cameraPositionState.move(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.fromLatLngZoom(
+                                currentLatLon,
+                                15f
+                            )
+                        )
+                    )
                 } else {
                     if (fineLocationPermissionState.shouldShowRationale) {
                         rationaleState = RationaleState(
@@ -91,7 +104,8 @@ fun GoogleMapViewScreen() {
                     } else {
                         fineLocationPermissionState.launchMultiplePermissionRequest()
                     }
-                    Toast.makeText(context, "Location Permissions not Enabled.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Location Permissions not Enabled.", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }, modifier = Modifier
                 .padding(16.dp)
@@ -100,37 +114,23 @@ fun GoogleMapViewScreen() {
         ) {
             Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
         }
-        Text(
-            text = "current Location is: \n Latitude: ${latLon.latitude} \n Longitude: ${latLon.longitude}",
-            modifier = Modifier
-                .padding(16.dp)
-                .align(Alignment.BottomCenter)
-        )
     }
 }
 
-data class LatLon(
-    val latitude: Double,
-    val longitude: Double,
-)
-
 @Composable
-fun DisplayGoogleMaps() {
-    val singapore = LatLng(1.35, 103.87)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singapore, 10f)
-    }
+fun DisplayGoogleMaps(
+    cameraPositionState: CameraPositionState,
+    currentLatLon: LatLng = LatLng(1.35, 103.87)
+) {
     val uiSettings by remember { mutableStateOf(MapUiSettings(zoomControlsEnabled = false)) }
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
         uiSettings = uiSettings,
-    )
-}
-
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun MapsPreview() {
-    GoogleMapViewScreen()
+    ) {
+        Marker(
+            state = MarkerState(position = currentLatLon),
+            title = "My Current Location"
+        )
+    }
 }
