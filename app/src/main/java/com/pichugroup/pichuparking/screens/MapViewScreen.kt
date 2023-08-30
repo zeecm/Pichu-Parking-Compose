@@ -3,15 +3,14 @@ package com.pichugroup.pichuparking.screens
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
@@ -22,9 +21,11 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,10 +60,48 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapViewScreen() {
+    var isClicked by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Scaffold Example") },
+                actions = {
+                    IconButton(onClick = { isClicked = !isClicked }) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Show menu filter chips"
+                        )
+                    }
+                    if (isClicked) {
+                        FilterChips()
+                    }
+                },
+                modifier = Modifier
+                    .padding(start = 10.dp, end = 10.dp, top = 20.dp, bottom = 20.dp)
+                    .clip(RoundedCornerShape(90.dp)),
+                colors = centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                ),
+            )
+        },
+        content = {
+            Box {
+                MapsContent()
+            }
+        },
+    )
+}
+
+
 @SuppressLint("MissingPermission")
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun GoogleMapViewScreen() {
+fun MapsContent() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val fineLocationPermissionState = rememberMultiplePermissionsState(
@@ -94,16 +133,14 @@ fun GoogleMapViewScreen() {
                         ).await()
                         result?.let { fetchedLocation ->
                             currentLatLon = LatLng(
-                                fetchedLocation.latitude,
-                                fetchedLocation.longitude
+                                fetchedLocation.latitude, fetchedLocation.longitude
                             )
                         }
                     }
                     cameraPositionState.move(
                         CameraUpdateFactory.newCameraPosition(
                             CameraPosition.fromLatLngZoom(
-                                currentLatLon,
-                                15f
+                                currentLatLon, 15f
                             )
                         )
                     )
@@ -136,8 +173,7 @@ fun GoogleMapViewScreen() {
 
 @Composable
 fun DisplayGoogleMaps(
-    cameraPositionState: CameraPositionState,
-    currentLatLon: LatLng = LatLng(1.35, 103.87)
+    cameraPositionState: CameraPositionState, currentLatLon: LatLng = LatLng(1.35, 103.87)
 ) {
     val uiSettings by remember { mutableStateOf(MapUiSettings(zoomControlsEnabled = false)) }
     GoogleMap(
@@ -146,19 +182,16 @@ fun DisplayGoogleMaps(
         uiSettings = uiSettings,
     ) {
         Marker(
-            state = MarkerState(position = currentLatLon),
-            title = "My Current Location"
+            state = MarkerState(position = currentLatLon), title = "My Current Location"
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilterChipExample() {
-    ChipVerticalGrid(
-        spacing = 7.dp,
-        modifier = Modifier
-            .padding(7.dp)
+fun FilterChips() {
+    HorizontalGrid(
+        spacing = 7.dp, modifier = Modifier.padding(7.dp)
     ) {
         var selected by remember { mutableStateOf(false) }
         var selected2 by remember { mutableStateOf(false) }
@@ -203,14 +236,11 @@ fun FilterChipExample() {
 }
 
 @Composable
-fun ChipVerticalGrid(
-    modifier: Modifier = Modifier,
-    spacing: Dp,
-    content: @Composable () -> Unit
+fun HorizontalGrid(
+    modifier: Modifier = Modifier, spacing: Dp, content: @Composable () -> Unit
 ) {
     Layout(
-        content = content,
-        modifier = modifier
+        content = content, modifier = modifier
     ) { measurables, constraints ->
         var currentRow = 0
         var currentOrigin = IntOffset.Zero
@@ -220,7 +250,8 @@ fun ChipVerticalGrid(
 
             if (currentOrigin.x > 0f && currentOrigin.x + placeable.width > constraints.maxWidth) {
                 currentRow += 1
-                currentOrigin = currentOrigin.copy(x = 0, y = currentOrigin.y + placeable.height + spacingValue)
+                currentOrigin =
+                    currentOrigin.copy(x = 0, y = currentOrigin.y + placeable.height + spacingValue)
             }
 
             placeable to currentOrigin.also {
@@ -228,10 +259,8 @@ fun ChipVerticalGrid(
             }
         }
 
-        layout(
-            width = constraints.maxWidth,
-            height = placeables.lastOrNull()?.run { first.height + second.y } ?: 0
-        ) {
+        layout(width = constraints.maxWidth,
+            height = placeables.lastOrNull()?.run { first.height + second.y } ?: 0) {
             placeables.forEach {
                 val (placeable, origin) = it
                 placeable.place(origin.x, origin.y)
@@ -240,55 +269,9 @@ fun ChipVerticalGrid(
     }
 }
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScaffoldExample(
-
-) {
-    var isClicked  by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "Scaffold Example") },
-                actions = {
-                    IconButton(onClick = { isClicked = !isClicked }) {
-                        Log.v("IsClicked Value: ", isClicked.toString())
-                        Icon(imageVector = Icons.Default.Menu, contentDescription = null)
-                    }
-                    if (isClicked) {
-                        // display your composable
-                        FilterChipExample()
-                        showMessage(context, message = isClicked.toString())
-                    }
-                    else{
-                        showMessage(context, message = isClicked.toString())
-                    }
-                }
-            )
-        },
-        content = {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(text = "Main Content")
-            }
-            Box {
-                GoogleMapViewScreen()
-            }
-
-        }
-    )
-}
-
-@Composable
-fun showMessage(context: Context, message:String) {
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+fun ShowToastMessage(context: Context, message: String, toastLength: Int) {
+    Toast.makeText(context, message, toastLength).show()
 }
 
 @Composable
