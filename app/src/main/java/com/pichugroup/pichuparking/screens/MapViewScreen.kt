@@ -2,8 +2,12 @@ package com.pichugroup.pichuparking.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,12 +15,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -229,5 +237,67 @@ fun ChipVerticalGrid(
                 placeable.place(origin.x, origin.y)
             }
         }
+    }
+}
+
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScaffoldExample(
+
+) {
+    var isClicked  by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = "Scaffold Example") },
+                actions = {
+                    IconButton(onClick = { isClicked = !isClicked }) {
+                        Log.v("IsClicked Value: ", isClicked.toString())
+                        Icon(imageVector = Icons.Default.Menu, contentDescription = null)
+                    }
+                    if (isClicked) {
+                        // display your composable
+                        FilterChipExample()
+                        showMessage(context, message = isClicked.toString())
+                    }
+                    else{
+                        showMessage(context, message = isClicked.toString())
+                    }
+                }
+            )
+        },
+        content = {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "Main Content")
+            }
+            Box {
+                GoogleMapViewScreen()
+            }
+
+        }
+    )
+}
+
+@Composable
+fun showMessage(context: Context, message:String) {
+    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+}
+
+@Composable
+fun CraneDrawer(modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .fillMaxSize()
+            .padding(start = 24.dp, top = 48.dp)
+    ) {
+
     }
 }

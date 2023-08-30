@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import com.pichugroup.pichuparking.screens.FilterChipExample
 import com.pichugroup.pichuparking.screens.GoogleMapViewScreen
+import com.pichugroup.pichuparking.screens.ScaffoldExample
 import com.pichugroup.pichuparking.ui.theme.PichuParkingComposeTheme
 
 class MainActivity : ComponentActivity() {
@@ -14,6 +15,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             PichuParkingComposeTheme {
                 Column {
+                    ScaffoldExample()
                     FilterChipExample()
                     GoogleMapViewScreen()
 
