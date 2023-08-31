@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -62,16 +63,20 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
+import com.pichugroup.pichuparking.api.PichuParkingAPIClient
+import com.pichugroup.pichuparking.api.PichuParkingData
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -133,8 +138,16 @@ fun MapsContent() {
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
     }
+    val parkingAPIClient: PichuParkingAPIClient = remember {
+        PichuParkingAPIClient()
+    }
+    var parkingCoordinatesAndNames by remember { mutableStateOf<Map<LatLng, String>>(mapOf()) }
     Box {
-        DisplayGoogleMaps(cameraPositionState = cameraPositionState, currentLatLon = currentLatLon)
+        DisplayGoogleMaps(
+            cameraPositionState = cameraPositionState,
+            enableLocation = fineLocationPermissionState.allPermissionsGranted,
+            parkingCoordinates = parkingCoordinatesAndNames,
+        )
         rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
         FloatingActionButton(
             onClick = {
@@ -176,28 +189,70 @@ fun MapsContent() {
                         .show()
                 }
             }, modifier = Modifier
+                .size(75.dp)
                 .padding(16.dp)
                 .align(Alignment.BottomEnd)
                 .clip(CircleShape)
         ) {
             Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
         }
+        FloatingActionButton(
+            onClick = {
+                scope.launch(Dispatchers.IO) {
+                    val mutableCoordinateNameMap: MutableMap<LatLng, String> = mutableMapOf()
+                    val parkingData: List<PichuParkingData> = parkingAPIClient.getParkingLots()
+                    parkingData.forEach {
+                        val latLng = LatLng(it.latitude, it.longitude)
+                        val name = it.carparkName
+                        mutableCoordinateNameMap[latLng] = name
+                    }
+                    parkingCoordinatesAndNames = mutableCoordinateNameMap.toMap()
+
+                }
+            },
+            modifier = Modifier
+                .size(75.dp)
+                .padding(start = 16.dp, bottom = 30.dp, end = 16.dp)
+                .align(Alignment.BottomStart)
+                .clip(
+                    CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = "Refresh Parking Lot Data"
+            )
+        }
     }
 }
 
 @Composable
 fun DisplayGoogleMaps(
-    cameraPositionState: CameraPositionState, currentLatLon: LatLng = LatLng(1.35, 103.87)
+    cameraPositionState: CameraPositionState,
+    enableLocation: Boolean = false,
+    parkingCoordinates: Map<LatLng, String>? = null,
 ) {
-    val uiSettings by remember { mutableStateOf(MapUiSettings(zoomControlsEnabled = false)) }
+
+    val uiSettings by remember {
+        mutableStateOf(
+            MapUiSettings(
+                zoomControlsEnabled = false,
+                mapToolbarEnabled = false
+            )
+        )
+    }
+    val mapProperties by remember { mutableStateOf(MapProperties(isMyLocationEnabled = enableLocation)) }
     GoogleMap(
         modifier = Modifier.fillMaxSize(),
         cameraPositionState = cameraPositionState,
         uiSettings = uiSettings,
+        properties = mapProperties,
     ) {
-        Marker(
-            state = MarkerState(position = currentLatLon), title = "My Current Location"
-        )
+        parkingCoordinates?.forEach { (coordinate, name) ->
+            Marker(
+                state = MarkerState(position = coordinate), title = name,
+            )
+        }
     }
 }
 
