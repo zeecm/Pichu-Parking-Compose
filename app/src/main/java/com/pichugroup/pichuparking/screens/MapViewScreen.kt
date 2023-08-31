@@ -4,17 +4,26 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -35,8 +44,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -54,6 +66,7 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.pichugroup.pichuparking.R
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +108,7 @@ fun MapViewScreen() {
             }
         },
     )
+    MapOptionsScreen()
 }
 
 
@@ -283,4 +297,91 @@ fun CraneDrawer(modifier: Modifier = Modifier) {
     ) {
 
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapOptionsButton(
+    options: List<MapOption>,
+    onOptionSelected: (MapOption) -> Unit
+) {
+    var isBottomSheetOpen by remember { mutableStateOf(false) }
+
+    Column {
+        Button(
+            onClick = { isBottomSheetOpen = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(text = "Map Options")
+        }
+
+        if (isBottomSheetOpen) {
+            BottomSheetScaffold(
+                sheetContent = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Select an option",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        LazyRow(
+                            contentPadding = PaddingValues(start = 8.dp, end = 8.dp)
+                        ) {
+                            items(options) { option ->
+                                MapOptionItem(option, onOptionSelected)
+                            }
+                        }
+                    }
+                },
+                sheetShape = MaterialTheme.shapes.large,
+                sheetContainerColor = Color.White
+            ) {
+                // Main content goes here
+            }
+        }
+    }
+}
+
+@Composable
+fun MapOptionItem(option: MapOption, onOptionSelected: (MapOption) -> Unit) {
+    Box(
+        modifier = Modifier
+            .padding(8.dp)
+            .clickable { onOptionSelected(option) }
+    ) {
+        Image(
+            painter = painterResource(id = option.iconResId),
+            contentDescription = option.title,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .padding(8.dp)
+        )
+    }
+}
+
+data class MapOption(val title: String, val iconResId: Int)
+
+@Composable
+fun MapOptionsScreen() {
+    val mapOptions = listOf(
+        MapOption("Display Markers", R.drawable.test),
+//        MapOption("Function 1", R.drawable.ic_function1),
+//        MapOption("Function 2", R.drawable.ic_function2),
+        // Add more options as needed
+    )
+
+    MapOptionsButton(
+        options = mapOptions,
+        onOptionSelected = { selectedOption ->
+            // Handle the selected option here
+        }
+    )
 }
