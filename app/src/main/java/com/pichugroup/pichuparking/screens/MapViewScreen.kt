@@ -58,6 +58,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -65,7 +66,7 @@ import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerInfoWindowContent
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
@@ -141,12 +142,12 @@ fun MapsContent() {
     val parkingAPIClient: PichuParkingAPIClient = remember {
         PichuParkingAPIClient()
     }
-    var parkingCoordinatesAndNames by remember { mutableStateOf<Map<LatLng, String>>(mapOf()) }
+    var parkingLotData by remember { mutableStateOf<List<PichuParkingData>>(listOf()) }
     Box {
         DisplayGoogleMaps(
             cameraPositionState = cameraPositionState,
             enableLocation = fineLocationPermissionState.allPermissionsGranted,
-            parkingCoordinates = parkingCoordinatesAndNames,
+            parkingLotData = parkingLotData,
         )
         rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
         FloatingActionButton(
@@ -199,15 +200,7 @@ fun MapsContent() {
         FloatingActionButton(
             onClick = {
                 scope.launch(Dispatchers.IO) {
-                    val mutableCoordinateNameMap: MutableMap<LatLng, String> = mutableMapOf()
-                    val parkingData: List<PichuParkingData> = parkingAPIClient.getParkingLots()
-                    parkingData.forEach {
-                        val latLng = LatLng(it.latitude, it.longitude)
-                        val name = it.carparkName
-                        mutableCoordinateNameMap[latLng] = name
-                    }
-                    parkingCoordinatesAndNames = mutableCoordinateNameMap.toMap()
-
+                    parkingLotData = parkingAPIClient.getParkingLots()
                 }
             },
             modifier = Modifier
@@ -230,7 +223,7 @@ fun MapsContent() {
 fun DisplayGoogleMaps(
     cameraPositionState: CameraPositionState,
     enableLocation: Boolean = false,
-    parkingCoordinates: Map<LatLng, String>? = null,
+    parkingLotData: List<PichuParkingData>? = null,
 ) {
 
     val uiSettings by remember {
@@ -248,13 +241,38 @@ fun DisplayGoogleMaps(
         uiSettings = uiSettings,
         properties = mapProperties,
     ) {
-        parkingCoordinates?.forEach { (coordinate, name) ->
-            Marker(
-                state = MarkerState(position = coordinate), title = name,
+        parkingLotData?.forEach {
+            ParkingMarkerInfoWindow(
+                state = MarkerState(position = LatLng(it.latitude, it.longitude)),
+                title = it.carparkName,
+                parkingData = it,
             )
         }
     }
 }
+
+@Composable
+fun ParkingMarkerInfoWindow(
+    state: MarkerState,
+    title: String? = null,
+    icon: BitmapDescriptor? = null,
+    parkingData: PichuParkingData,
+) {
+    MarkerInfoWindowContent(
+        state = state,
+        title = title,
+        icon = icon,
+        content = {
+            Column {
+                Text("Carpark ID: ${parkingData.carparkID}", color = Color.Black)
+                Text("Carpark Name: ${parkingData.carparkName}", color = Color.Black)
+                Text("Vehicle Type: ${parkingData.translateVehicleCategory()}", color = Color.Black)
+                Text("Available Lots: ${parkingData.availableLots}", color = Color.Black)
+            }
+        }
+    )
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

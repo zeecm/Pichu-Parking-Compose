@@ -14,7 +14,18 @@ data class PichuParkingData(
     @SerializedName("longitude") var longitude: Double,
     @SerializedName("vehicleCategory") var vehicleCategory: String,
     @SerializedName("availableLots") var availableLots: Int,
-)
+) {
+    companion object {
+        val vehicleCategoryMap: Map<String, String> = mapOf(
+            "C" to "Car",
+            "H" to "Heavy Vehicle",
+            "Y" to "Motorcycle",
+        )
+    }
+    fun translateVehicleCategory(): String {
+        return vehicleCategoryMap[vehicleCategory] ?: "Unknown"
+    }
+}
 
 data class PichuParkingRates(
     @SerializedName("carparkID") var carparkID: String,
