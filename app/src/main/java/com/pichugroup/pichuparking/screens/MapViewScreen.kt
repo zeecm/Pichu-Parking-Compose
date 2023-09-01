@@ -4,7 +4,6 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -28,6 +27,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -48,16 +49,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -73,7 +75,7 @@ import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.MarkerInfoWindowContent
+import com.google.maps.android.compose.MarkerInfoWindow
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
@@ -196,7 +198,8 @@ fun MapsContent() {
                     Toast.makeText(context, "Location Permissions not Enabled.", Toast.LENGTH_SHORT)
                         .show()
                 }
-            }, modifier = Modifier
+            },
+            modifier = Modifier
                 .size(75.dp)
                 .padding(16.dp)
                 .align(Alignment.BottomEnd)
@@ -219,8 +222,7 @@ fun MapsContent() {
                 )
         ) {
             Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = "Refresh Parking Lot Data"
+                imageVector = Icons.Default.Refresh, contentDescription = "Refresh Parking Lot Data"
             )
         }
     }
@@ -236,8 +238,7 @@ fun DisplayGoogleMaps(
     val uiSettings by remember {
         mutableStateOf(
             MapUiSettings(
-                zoomControlsEnabled = false,
-                mapToolbarEnabled = false
+                zoomControlsEnabled = false, mapToolbarEnabled = false
             )
         )
     }
@@ -265,22 +266,50 @@ fun ParkingMarkerInfoWindow(
     state: MarkerState,
     title: String? = null,
     icon: BitmapDescriptor? = null,
+    xOffset: Float = .5F,
+    yOffset: Float = -.5F,
     parkingData: PichuParkingData,
 ) {
-    MarkerInfoWindowContent(
-        state = state,
-        title = title,
-        icon = icon,
-        content = {
-            Column {
-                Text("Carpark ID: ${parkingData.carparkID}", color = Color.Black)
-                Text("Carpark Name: ${parkingData.carparkName}", color = Color.Black)
-                Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = Color.Black)
-                Text("Available Lots: ${parkingData.availableLots}", color = Color.Black)
-            }
-        }
-    )
+    MarkerInfoWindow(
+        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset)
+    ) {
+        ParkingInfoCard(
+            carparkID = parkingData.carparkID,
+            carparkName = parkingData.carparkName,
+            vehicleType = parkingData.translatedVehicleCategory,
+            availableLots = parkingData.availableLots
+        )
+    }
 }
+
+@Composable
+fun ParkingInfoCard(
+    carparkID: String, carparkName: String, vehicleType: String, availableLots: Int
+) {
+    ElevatedCard(elevation = CardDefaults.cardElevation(defaultElevation = 50.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text("Carpark ID: $carparkID")
+            Text("Carpark Name: $carparkName")
+            Text("Vehicle Type: $vehicleType")
+            Text("Available Lots: $availableLots")
+        }
+    }
+}
+
+@Preview()
+@Composable
+fun PreviewParkingInfoCard() {
+    val sampleParkingData = PichuParkingData(
+        carparkID = "test",
+        carparkName = "test",
+        latitude = 0.0,
+        longitude = 0.0,
+        vehicleCategory = "Y",
+        availableLots = 10
+    )
+    ParkingInfoCard("test", "test", "test", 15)
+}
+
 
 @Composable
 private fun defaultParkingIconFromResource(sizeDp: Int): BitmapDescriptor? {
@@ -290,14 +319,14 @@ private fun defaultParkingIconFromResource(sizeDp: Int): BitmapDescriptor? {
     val sizePx = with(LocalDensity.current) { sizeDp.dp.toPx().toInt() }
 
     parkingIconDrawable?.setBounds(0, 0, sizePx, sizePx)
-    val parkingIconBitmap = parkingIconDrawable?.let { Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888) }
+    val parkingIconBitmap =
+        parkingIconDrawable?.let { Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888) }
     val canvas: Canvas? = parkingIconBitmap?.let { Canvas(it) }
     if (canvas != null) {
         parkingIconDrawable.draw(canvas)
     }
     return parkingIconBitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
 }
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -401,8 +430,7 @@ fun CraneDrawer(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapOptionsButton(
-    options: List<MapOption>,
-    onOptionSelected: (MapOption) -> Unit
+    options: List<MapOption>, onOptionSelected: (MapOption) -> Unit
 ) {
     var isBottomSheetOpen by remember { mutableStateOf(false) }
 
@@ -437,9 +465,7 @@ fun MapOptionsButton(
                             }
                         }
                     }
-                },
-                sheetShape = MaterialTheme.shapes.large,
-                sheetContainerColor = Color.White
+                }, sheetShape = MaterialTheme.shapes.large, sheetContainerColor = Color.White
             ) {
                 // Main content goes here
             }
@@ -449,11 +475,9 @@ fun MapOptionsButton(
 
 @Composable
 fun MapOptionItem(option: MapOption, onOptionSelected: (MapOption) -> Unit) {
-    Box(
-        modifier = Modifier
-            .padding(8.dp)
-            .clickable { onOptionSelected(option) }
-    ) {
+    Box(modifier = Modifier
+        .padding(8.dp)
+        .clickable { onOptionSelected(option) }) {
         Image(
             painter = painterResource(id = option.iconResId),
             contentDescription = option.title,
@@ -477,10 +501,7 @@ fun MapOptionsScreen() {
         // Add more options as needed
     )
 
-    MapOptionsButton(
-        options = mapOptions,
-        onOptionSelected = { selectedOption ->
-            // Handle the selected option here
-        }
-    )
+    MapOptionsButton(options = mapOptions, onOptionSelected = { selectedOption ->
+        // Handle the selected option here
+    })
 }
