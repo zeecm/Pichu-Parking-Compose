@@ -3,6 +3,9 @@ package com.pichugroup.pichuparking.screens
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,17 +51,21 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -241,10 +248,12 @@ fun DisplayGoogleMaps(
         uiSettings = uiSettings,
         properties = mapProperties,
     ) {
+        val parkingIcon = defaultParkingIconFromResource(30)
         parkingLotData?.forEach {
             ParkingMarkerInfoWindow(
                 state = MarkerState(position = LatLng(it.latitude, it.longitude)),
                 title = it.carparkName,
+                icon = parkingIcon,
                 parkingData = it,
             )
         }
@@ -272,6 +281,23 @@ fun ParkingMarkerInfoWindow(
         }
     )
 }
+
+@Composable
+private fun defaultParkingIconFromResource(sizeDp: Int): BitmapDescriptor? {
+    val context = LocalContext.current
+    val parkingIconResourceID: Int = R.drawable.parking_marker
+    val parkingIconDrawable = ContextCompat.getDrawable(context, parkingIconResourceID)
+    val sizePx = with(LocalDensity.current) { sizeDp.dp.toPx().toInt() }
+
+    parkingIconDrawable?.setBounds(0, 0, sizePx, sizePx)
+    val parkingIconBitmap = parkingIconDrawable?.let { Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888) }
+    val canvas: Canvas? = parkingIconBitmap?.let { Canvas(it) }
+    if (canvas != null) {
+        parkingIconDrawable.draw(canvas)
+    }
+    return parkingIconBitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
+}
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
