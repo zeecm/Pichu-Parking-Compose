@@ -22,9 +22,10 @@ data class PichuParkingData(
             "Y" to "Motorcycle",
         )
     }
-    fun translateVehicleCategory(): String {
-        return vehicleCategoryMap[vehicleCategory] ?: "Unknown"
-    }
+
+    val translatedVehicleCategory: String
+        get() = vehicleCategoryMap[vehicleCategory] ?: "Unknown"
+
 }
 
 data class PichuParkingRates(

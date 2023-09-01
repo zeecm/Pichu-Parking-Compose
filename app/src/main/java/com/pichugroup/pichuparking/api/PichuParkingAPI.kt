@@ -58,7 +58,7 @@ internal class PichuParkingAPIClient {
         return response
     }
 
-    suspend fun getParkingLots(): List<PichuParkingData> {
+    suspend fun getParkingLots(bikesOnly: Boolean = true): List<PichuParkingData> {
         var finalData: List<PichuParkingData> = listOf()
         val parkingLotEndpoint: String = API_INVOKE_URL + PARKING_LOTS_RESOURCE
         try {
@@ -80,6 +80,9 @@ internal class PichuParkingAPIClient {
             logger.error(e) { "Server response error with status code $statusCode: $e" }
         } catch (e: Exception) {
             logger.error(e) { "General error: $e" }
+        }
+        if (bikesOnly) {
+            finalData = finalData.filter { it.vehicleCategory == "Y"}
         }
         return finalData
     }

@@ -275,7 +275,7 @@ fun ParkingMarkerInfoWindow(
             Column {
                 Text("Carpark ID: ${parkingData.carparkID}", color = Color.Black)
                 Text("Carpark Name: ${parkingData.carparkName}", color = Color.Black)
-                Text("Vehicle Type: ${parkingData.translateVehicleCategory()}", color = Color.Black)
+                Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = Color.Black)
                 Text("Available Lots: ${parkingData.availableLots}", color = Color.Black)
             }
         }
