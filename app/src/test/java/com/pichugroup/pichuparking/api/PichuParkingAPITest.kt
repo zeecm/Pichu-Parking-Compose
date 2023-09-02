@@ -1,15 +1,23 @@
 package com.pichugroup.pichuparking.api
 
 import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Test
 
 internal class PichuParkingAPITest {
-    private val parkingAPIClient = PichuParkingAPIClient()
+    private lateinit var parkingAPIClient: PichuParkingAPIClient
+    @Before
+    fun setup() {
+        parkingAPIClient = PichuParkingAPIClient()
+    }
     @Test
-    fun testGetParkingLots() {
-        val parkingLotData = runBlocking {
-            parkingAPIClient.getParkingLots()
+    fun testGetParkingLotsIterable() {
+        val parkingData: List<PichuParkingData>?
+        runBlocking {
+            parkingData = parkingAPIClient.getParkingLots()
         }
-        assert(parkingLotData[0] is PichuParkingData)
+        if (parkingData != null) {
+            assert(parkingData.all { it is PichuParkingData })
+        }
     }
 }

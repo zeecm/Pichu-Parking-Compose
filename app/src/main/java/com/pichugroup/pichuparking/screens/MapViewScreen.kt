@@ -151,7 +151,7 @@ fun MapsContent() {
     val parkingAPIClient: PichuParkingAPIClient = remember {
         PichuParkingAPIClient()
     }
-    var parkingLotData by remember { mutableStateOf<List<PichuParkingData>>(listOf()) }
+    var parkingLotData by remember { mutableStateOf<List<PichuParkingData>?>(null) }
     Box {
         DisplayGoogleMaps(
             cameraPositionState = cameraPositionState,

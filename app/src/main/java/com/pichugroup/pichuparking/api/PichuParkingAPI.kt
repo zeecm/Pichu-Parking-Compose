@@ -14,8 +14,10 @@ import io.ktor.client.statement.HttpResponse
 import kotlinx.coroutines.runBlocking
 import java.nio.channels.UnresolvedAddressException
 
+private val logger = KotlinLogging.logger {}
+
+
 internal class PichuParkingAPIClient {
-    private val logger = KotlinLogging.logger {}
     private var requestHeader: MutableMap<String, String> = mutableMapOf(
         "x-api-key" to BuildConfig.PICHU_PARKING_API_KEY
     )
@@ -58,38 +60,60 @@ internal class PichuParkingAPIClient {
         return response
     }
 
-    suspend fun getParkingLots(bikesOnly: Boolean = true): List<PichuParkingData> {
-        var finalData: List<PichuParkingData> = listOf()
-        val parkingLotEndpoint: String = API_INVOKE_URL + PARKING_LOTS_RESOURCE
-        try {
-            val parkingLotResponse: HttpResponse = makeAPICall(
-                endpoint = parkingLotEndpoint,
-                headers = requestHeader,
-            )
-
-            val pichuResponse: PichuParkingAPIResponse =
-                deserializePichuParkingResponse(parkingLotResponse.body())
-            finalData = pichuResponse.data
-        } catch (e: UnresolvedAddressException) {
-            logger.error(e) { "Unresolved address error: $e" }
-        } catch (e: ClientRequestException) {
-            val statusCode = e.response.status.value
-            logger.error(e) { "Client request error with status code $statusCode: $e" }
-        } catch (e: ServerResponseException) {
-            val statusCode = e.response.status.value
-            logger.error(e) { "Server response error with status code $statusCode: $e" }
+    suspend fun getParkingLots(
+        vehicleCategories: Set<VehicleCategory> = setOf(
+            VehicleCategory.CAR,
+            VehicleCategory.MOTORCYCLE
+        )
+    ): List<PichuParkingData>? {
+        return try {
+            val parkingLotResponse = fetchParkingLotData()
+            parseAndFilterParkingData(parkingLotResponse, vehicleCategories)
         } catch (e: Exception) {
-            logger.error(e) { "General error: $e" }
+            handleException(e)
+            null
         }
-        if (bikesOnly) {
-            finalData = finalData.filter { it.vehicleCategory == "Y"}
+    }
+
+    private suspend fun fetchParkingLotData(): HttpResponse {
+        val parkingLotEndpoint = API_INVOKE_URL + PARKING_LOTS_RESOURCE
+        return makeAPICall(endpoint = parkingLotEndpoint, headers = requestHeader)
+    }
+
+    private suspend fun parseAndFilterParkingData(
+        parkingLotResponse: HttpResponse,
+        vehicleCategories: Set<VehicleCategory>
+    ): List<PichuParkingData> {
+        val pichuResponse = deserializePichuParkingResponse(parkingLotResponse.body())
+        return pichuResponse.data.filter { data ->
+            vehicleCategories.any { category ->
+                category.description == data.translatedVehicleCategory
+            }
         }
-        return finalData
+    }
+
+    private fun handleException(e: Exception) {
+        when (e) {
+            is UnresolvedAddressException -> logger.error(e) { "Unresolved address error: $e" }
+            is ClientRequestException -> {
+                val statusCode = e.response.status.value
+                logger.error(e) { "Client request error with status code $statusCode: $e" }
+            }
+
+            is ServerResponseException -> {
+                val statusCode = e.response.status.value
+                logger.error(e) { "Server response error with status code $statusCode: $e" }
+            }
+
+            else -> logger.error(e) { "General error: $e" }
+        }
     }
 
 
     private fun deserializePichuParkingResponse(jsonText: String): PichuParkingAPIResponse {
         val gson = Gson()
-        return gson.fromJson(jsonText, PichuParkingAPIResponse::class.java)
+        val pichuResponse = gson.fromJson(jsonText, PichuParkingAPIResponse::class.java)
+        pichuResponse.CheckValid()
+        return pichuResponse
     }
 }
