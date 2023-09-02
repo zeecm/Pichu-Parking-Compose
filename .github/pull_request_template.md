@@ -35,3 +35,8 @@
 
 ## Additional Notes
 <!-- Add any additional information, concerns, or context that might be relevant to the reviewers or maintainers. -->
+
+
+# For Reviewer
+## Code Request Checklist
+Click [Here](code_review_checklist.md) for code review guidelines.
