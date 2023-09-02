@@ -151,7 +151,7 @@ fun MapsContent() {
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
     }
-    var currentZoom by remember { mutableStateOf(15F)}
+    var currentZoom by remember { mutableStateOf(15F) }
     val parkingAPIClient: PichuParkingAPIClient = remember {
         PichuParkingAPIClient()
     }
@@ -201,8 +201,7 @@ fun MapsContent() {
             onClick = {
                 scope.launch(Dispatchers.IO) {
                     val vehicleTypesToGet: Set<VehicleCategory> = setOf(
-                        VehicleCategory.CAR,
-                        VehicleCategory.MOTORCYCLE
+                        VehicleCategory.CAR, VehicleCategory.MOTORCYCLE
                     )
                     parkingLotData = parkingAPIClient.getParkingLots(vehicleTypesToGet)
                 }
