@@ -61,10 +61,7 @@ internal class PichuParkingAPIClient {
     }
 
     suspend fun getParkingLots(
-        vehicleCategories: Set<VehicleCategory> = setOf(
-            VehicleCategory.CAR,
-            VehicleCategory.MOTORCYCLE
-        )
+        vehicleCategories: Set<VehicleCategory>
     ): List<PichuParkingData>? {
         return try {
             val parkingLotResponse = fetchParkingLotData()

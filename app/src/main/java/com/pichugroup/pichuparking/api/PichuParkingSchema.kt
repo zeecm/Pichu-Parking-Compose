@@ -3,7 +3,11 @@ package com.pichugroup.pichuparking.api
 import com.google.gson.annotations.SerializedName
 
 enum class VehicleCategory(val description: String) {
-    CAR(description = "Car"), MOTORCYCLE(description = "MotorCycle"), HEAVY_VEHICLE(description = "Heavy Vehicle")
+    CAR(description = "Car"), MOTORCYCLE(description = "MotorCycle"), HEAVY_VEHICLE(description = "Heavy Vehicle");
+
+    companion object {
+        val all: Set<VehicleCategory> = values().toSet()
+    }
 }
 
 data class PichuParkingAPIResponse(

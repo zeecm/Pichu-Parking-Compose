@@ -81,6 +81,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
 import com.pichugroup.pichuparking.api.PichuParkingAPIClient
 import com.pichugroup.pichuparking.api.PichuParkingData
+import com.pichugroup.pichuparking.api.VehicleCategory
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
 import kotlinx.coroutines.Dispatchers
@@ -210,7 +211,11 @@ fun MapsContent() {
         FloatingActionButton(
             onClick = {
                 scope.launch(Dispatchers.IO) {
-                    parkingLotData = parkingAPIClient.getParkingLots()
+                    val vehicleTypesToGet: Set<VehicleCategory> = setOf(
+                        VehicleCategory.CAR,
+                        VehicleCategory.MOTORCYCLE
+                    )
+                    parkingLotData = parkingAPIClient.getParkingLots(vehicleTypesToGet)
                 }
             },
             modifier = Modifier
