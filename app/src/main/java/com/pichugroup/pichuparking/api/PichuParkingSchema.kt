@@ -15,7 +15,9 @@ data class PichuParkingAPIResponse(
     @SerializedName("data") var data: List<PichuParkingData>,
 ) {
     fun CheckValid(): Boolean {
-        if (this.timestamp.isNullOrBlank() || this.data.isNullOrEmpty() || !this.data.all { it.CheckValid() }) {
+        if (this.timestamp.isNullOrBlank() ||
+            this.data.isNullOrEmpty() ||
+            !this.data.all { it.CheckValid() }) {
             throw IllegalArgumentException("invalid data for PichuParkingAPIResponse")
         }
         return true
@@ -23,7 +25,7 @@ data class PichuParkingAPIResponse(
 }
 
 data class PichuParkingData(
-    @SerializedName("CarparkID") var carparkID: String,
+    @SerializedName("carparkID") var carparkID: String,
     @SerializedName("carparkName") var carparkName: String,
     @SerializedName("latitude") var latitude: Double,
     @SerializedName("longitude") var longitude: Double,
@@ -42,7 +44,12 @@ data class PichuParkingData(
         get() = vehicleCategoryMap[vehicleCategory] ?: "Unknown"
 
     fun CheckValid(): Boolean {
-        if (carparkID.isNullOrBlank() || carparkName.isNullOrBlank() || latitude == null || longitude == null || vehicleCategory.isNullOrBlank() || availableLots == null) {
+        if (carparkID.isNullOrBlank() &&
+            carparkName.isNullOrBlank() &&
+            latitude == null &&
+            longitude == null &&
+            vehicleCategory.isNullOrBlank() &&
+            availableLots == null) {
             throw IllegalArgumentException("invalid data for PichuParkingData")
         }
         return true

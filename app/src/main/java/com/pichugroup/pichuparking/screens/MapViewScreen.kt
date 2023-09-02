@@ -63,8 +63,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -149,6 +151,7 @@ fun MapsContent() {
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
     }
+    var currentZoom by remember { mutableStateOf(15F)}
     val parkingAPIClient: PichuParkingAPIClient = remember {
         PichuParkingAPIClient()
     }
@@ -164,24 +167,10 @@ fun MapsContent() {
             onClick = {
                 if (fineLocationPermissionState.allPermissionsGranted) {
                     scope.launch(Dispatchers.IO) {
-                        val priority = Priority.PRIORITY_HIGH_ACCURACY
-                        val result = locationClient.getCurrentLocation(
-                            priority,
-                            CancellationTokenSource().token,
-                        ).await()
-                        result?.let { fetchedLocation ->
-                            currentLatLon = LatLng(
-                                fetchedLocation.latitude, fetchedLocation.longitude
-                            )
-                        }
+                        currentLatLon = fetchCurrentLocation(locationClient)
                     }
-                    cameraPositionState.move(
-                        CameraUpdateFactory.newCameraPosition(
-                            CameraPosition.fromLatLngZoom(
-                                currentLatLon, 15f
-                            )
-                        )
-                    )
+                    currentZoom = cameraPositionState.position.zoom
+                    cameraPositionState.move(moveCamera(currentLatLon, currentZoom))
                 } else {
                     if (fineLocationPermissionState.shouldShowRationale) {
                         rationaleState = RationaleState(
@@ -233,6 +222,30 @@ fun MapsContent() {
     }
 }
 
+@SuppressLint("MissingPermission")
+private suspend fun fetchCurrentLocation(locationClient: FusedLocationProviderClient): LatLng {
+    lateinit var currentLatLon: LatLng
+    val priority = Priority.PRIORITY_HIGH_ACCURACY
+    val result = locationClient.getCurrentLocation(
+        priority,
+        CancellationTokenSource().token,
+    ).await()
+    result?.let { fetchedLocation ->
+        currentLatLon = LatLng(
+            fetchedLocation.latitude, fetchedLocation.longitude
+        )
+    }
+    return currentLatLon
+}
+
+private fun moveCamera(latLng: LatLng, zoom: Float): CameraUpdate {
+    return CameraUpdateFactory.newCameraPosition(
+        CameraPosition.fromLatLngZoom(
+            latLng, zoom
+        )
+    )
+}
+
 @Composable
 fun DisplayGoogleMaps(
     cameraPositionState: CameraPositionState,
@@ -272,7 +285,7 @@ fun ParkingMarkerInfoWindow(
     title: String? = null,
     icon: BitmapDescriptor? = null,
     xOffset: Float = .5F,
-    yOffset: Float = -.5F,
+    yOffset: Float = 0F,
     parkingData: PichuParkingData,
 ) {
     MarkerInfoWindow(
@@ -291,12 +304,17 @@ fun ParkingMarkerInfoWindow(
 fun ParkingInfoCard(
     carparkID: String, carparkName: String, vehicleType: String, availableLots: Int
 ) {
-    ElevatedCard(elevation = CardDefaults.cardElevation(defaultElevation = 50.dp)) {
+    val cardColor = MaterialTheme.colorScheme.onPrimary
+    val textColor = MaterialTheme.colorScheme.primary
+    ElevatedCard(
+        elevation = CardDefaults.cardElevation(defaultElevation = 1000.dp),
+        modifier = Modifier.background(color = cardColor, shape = RoundedCornerShape(35.dp))
+    ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            Text("Carpark ID: $carparkID")
-            Text("Carpark Name: $carparkName")
-            Text("Vehicle Type: $vehicleType")
-            Text("Available Lots: $availableLots")
+            Text("Carpark ID: $carparkID", color = textColor)
+            Text("Carpark Name: $carparkName", color = textColor)
+            Text("Vehicle Type: $vehicleType", color = textColor)
+            Text("Available Lots: $availableLots", color = textColor)
         }
     }
 }
