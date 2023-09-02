@@ -61,7 +61,9 @@ internal class PichuParkingAPIClient {
     }
 
     suspend fun getParkingLots(
-        vehicleCategories: Set<VehicleCategory>
+        vehicleCategories: Set<VehicleCategory> = setOf(
+            VehicleCategory.CAR, VehicleCategory.MOTORCYCLE
+        )
     ): List<PichuParkingData>? {
         return try {
             val parkingLotResponse = fetchParkingLotData()
@@ -78,8 +80,7 @@ internal class PichuParkingAPIClient {
     }
 
     private suspend fun parseAndFilterParkingData(
-        parkingLotResponse: HttpResponse,
-        vehicleCategories: Set<VehicleCategory>
+        parkingLotResponse: HttpResponse, vehicleCategories: Set<VehicleCategory>
     ): List<PichuParkingData> {
         val pichuResponse = deserializePichuParkingResponse(parkingLotResponse.body())
         return pichuResponse.data.filter { data ->

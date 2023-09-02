@@ -36,10 +36,12 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -83,7 +86,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
 import com.pichugroup.pichuparking.api.PichuParkingAPIClient
 import com.pichugroup.pichuparking.api.PichuParkingData
-import com.pichugroup.pichuparking.api.VehicleCategory
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
 import kotlinx.coroutines.Dispatchers
@@ -130,7 +132,6 @@ fun MapViewScreen() {
 }
 
 
-@SuppressLint("MissingPermission")
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapsContent() {
@@ -144,9 +145,6 @@ fun MapsContent() {
     val locationClient = remember {
         LocationServices.getFusedLocationProviderClient(context)
     }
-    var rationaleState by remember {
-        mutableStateOf<RationaleState?>(null)
-    }
     var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
     val cameraPositionState: CameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
@@ -156,36 +154,25 @@ fun MapsContent() {
         PichuParkingAPIClient()
     }
     var parkingLotData by remember { mutableStateOf<List<PichuParkingData>?>(null) }
+    var requirePermissionPrompt by remember { mutableStateOf(true) }
     Box {
+        CheckLocationPermissions(fineLocationPermissionState)
         DisplayGoogleMaps(
             cameraPositionState = cameraPositionState,
             enableLocation = fineLocationPermissionState.allPermissionsGranted,
             parkingLotData = parkingLotData,
         )
-        rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
         FloatingActionButton(
             onClick = {
                 if (fineLocationPermissionState.allPermissionsGranted) {
                     scope.launch(Dispatchers.IO) {
                         currentLatLon = fetchCurrentLocation(locationClient)
                     }
+                    requirePermissionPrompt = false
                     currentZoom = cameraPositionState.position.zoom
-                    cameraPositionState.move(moveCamera(currentLatLon, currentZoom))
+                    cameraPositionState.move(cameraUpdate(currentLatLon, currentZoom))
                 } else {
-                    if (fineLocationPermissionState.shouldShowRationale) {
-                        rationaleState = RationaleState(
-                            "Request Precise Location",
-                            "In order to use this feature please grant access by accepting " + "the location permission dialog." + "\n\nWould you like to continue?",
-                        ) { proceed ->
-                            if (proceed) {
-                                fineLocationPermissionState.launchMultiplePermissionRequest()
-                            }
-                            rationaleState = null
-                        }
-                    } else {
-                        fineLocationPermissionState.launchMultiplePermissionRequest()
-                    }
-                    Toast.makeText(context, "Location Permissions not Enabled.", Toast.LENGTH_SHORT)
+                    Toast.makeText(context, "Location Permissions not enabled", Toast.LENGTH_SHORT)
                         .show()
                 }
             },
@@ -200,10 +187,7 @@ fun MapsContent() {
         FloatingActionButton(
             onClick = {
                 scope.launch(Dispatchers.IO) {
-                    val vehicleTypesToGet: Set<VehicleCategory> = setOf(
-                        VehicleCategory.CAR, VehicleCategory.MOTORCYCLE
-                    )
-                    parkingLotData = parkingAPIClient.getParkingLots(vehicleTypesToGet)
+                    parkingLotData = parkingAPIClient.getParkingLots()
                 }
             },
             modifier = Modifier
@@ -219,6 +203,45 @@ fun MapsContent() {
             )
         }
     }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun CheckLocationPermissions(fineLocationPermissionState: MultiplePermissionsState) {
+    var requirePermissionPrompt by remember { mutableStateOf(true) }
+    requirePermissionPrompt = !fineLocationPermissionState.allPermissionsGranted
+    if (requirePermissionPrompt) {
+        LocationPermissionRequest(fineLocationPermissionState) {
+            requirePermissionPrompt = false
+        }
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun LocationPermissionRequest(
+    fineLocationPermissionState: MultiplePermissionsState, onDismiss: () -> Unit
+) {
+    var rationaleState by remember {
+        mutableStateOf<RationaleState?>(null)
+    }
+    rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
+    if (fineLocationPermissionState.shouldShowRationale) {
+        rationaleState = RationaleState(
+            "Request Precise Location",
+            "In order to use this feature please grant access by accepting " + "the location permission dialog." + "\n\nWould you like to continue?",
+        ) { proceed ->
+            if (proceed) {
+                fineLocationPermissionState.launchMultiplePermissionRequest()
+            }
+            rationaleState = null
+        }
+    } else {
+        run {
+            fineLocationPermissionState.launchMultiplePermissionRequest()
+        }
+    }
+    onDismiss()
 }
 
 @SuppressLint("MissingPermission")
@@ -237,7 +260,7 @@ private suspend fun fetchCurrentLocation(locationClient: FusedLocationProviderCl
     return currentLatLon
 }
 
-private fun moveCamera(latLng: LatLng, zoom: Float): CameraUpdate {
+private fun cameraUpdate(latLng: LatLng, zoom: Float): CameraUpdate {
     return CameraUpdateFactory.newCameraPosition(
         CameraPosition.fromLatLngZoom(
             latLng, zoom
@@ -287,50 +310,54 @@ fun ParkingMarkerInfoWindow(
     yOffset: Float = 0F,
     parkingData: PichuParkingData,
 ) {
-    MarkerInfoWindow(
-        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset)
-    ) {
-        ParkingInfoCard(
-            carparkID = parkingData.carparkID,
-            carparkName = parkingData.carparkName,
-            vehicleType = parkingData.translatedVehicleCategory,
-            availableLots = parkingData.availableLots
+    var showBottomSheet by remember { mutableStateOf(true) }
+    var displayState by remember { mutableStateOf<BottomSheetDisplayState?>(null) }
+    displayState?.run {
+        ParkingInfoBottomSheet(
+            parkingData = parkingData,
+            showBottomSheet = showBottomSheet,
+            displayState = this,
         )
     }
-}
-
-@Composable
-fun ParkingInfoCard(
-    carparkID: String, carparkName: String, vehicleType: String, availableLots: Int
-) {
-    val cardColor = MaterialTheme.colorScheme.onPrimary
-    val textColor = MaterialTheme.colorScheme.primary
-    ElevatedCard(
-        elevation = CardDefaults.cardElevation(defaultElevation = 1000.dp),
-        modifier = Modifier.background(color = cardColor, shape = RoundedCornerShape(35.dp))
+    MarkerInfoWindow(
+        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset),
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Text("Carpark ID: $carparkID", color = textColor)
-            Text("Carpark Name: $carparkName", color = textColor)
-            Text("Vehicle Type: $vehicleType", color = textColor)
-            Text("Available Lots: $availableLots", color = textColor)
+        displayState = BottomSheetDisplayState { newDisplayState ->
+            showBottomSheet = newDisplayState
         }
     }
 }
 
-@Preview()
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PreviewParkingInfoCard() {
-    val sampleParkingData = PichuParkingData(
-        carparkID = "test",
-        carparkName = "test",
-        latitude = 0.0,
-        longitude = 0.0,
-        vehicleCategory = "Y",
-        availableLots = 10
-    )
-    ParkingInfoCard("test", "test", "test", 15)
+fun ParkingInfoBottomSheet(
+    parkingData: PichuParkingData,
+    showBottomSheet: Boolean,
+    displayState: BottomSheetDisplayState,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val sheetColor = MaterialTheme.colorScheme.primaryContainer
+    val textColor = MaterialTheme.colorScheme.primary
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { displayState.onDisplayStateChange(false) },
+            sheetState = sheetState,
+            containerColor = sheetColor,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text("Carpark ID: ${parkingData.carparkID}", color = textColor)
+                Text("Carpark Name: ${parkingData.carparkName}", color = textColor)
+                Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = textColor)
+                Text("Available Lots: ${parkingData.availableLots}", color = textColor)
+            }
+        }
+    }
 }
+
+data class BottomSheetDisplayState(
+    val onDisplayStateChange: (showBottomSheet: Boolean) -> Unit
+)
 
 
 @Composable
@@ -349,7 +376,6 @@ private fun defaultParkingIconFromResource(sizeDp: Int): BitmapDescriptor? {
     }
     return parkingIconBitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
