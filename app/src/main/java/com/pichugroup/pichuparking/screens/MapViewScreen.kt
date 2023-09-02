@@ -27,8 +27,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -38,15 +36,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,10 +60,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
@@ -86,11 +90,14 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
 import com.pichugroup.pichuparking.api.PichuParkingAPIClient
 import com.pichugroup.pichuparking.api.PichuParkingData
+import com.pichugroup.pichuparking.api.PichuParkingRates
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
+import com.pichugroup.pichuparking.utils.distanceBetweenTwoCoordinates
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlin.math.roundToInt
 
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -222,7 +229,7 @@ fun CheckLocationPermissions(fineLocationPermissionState: MultiplePermissionsSta
 fun LocationPermissionRequest(
     fineLocationPermissionState: MultiplePermissionsState, onDismiss: () -> Unit
 ) {
-    var rationaleState by remember {
+    var rationaleState by rememberSaveable {
         mutableStateOf<RationaleState?>(null)
     }
     rationaleState?.run { PermissionAlertDialog(rationaleState = this) }
@@ -237,7 +244,7 @@ fun LocationPermissionRequest(
             rationaleState = null
         }
     } else {
-        run {
+        LaunchedEffect(fineLocationPermissionState) {
             fineLocationPermissionState.launchMultiplePermissionRequest()
         }
     }
@@ -274,7 +281,6 @@ fun DisplayGoogleMaps(
     enableLocation: Boolean = false,
     parkingLotData: List<PichuParkingData>? = null,
 ) {
-
     val uiSettings by remember {
         mutableStateOf(
             MapUiSettings(
@@ -289,7 +295,8 @@ fun DisplayGoogleMaps(
         uiSettings = uiSettings,
         properties = mapProperties,
     ) {
-        val parkingIcon = defaultParkingIconFromResource(30)
+        val parkingIcon =
+            defaultParkingIconFromResource(resourceID = R.drawable.parking_marker, sizeDp = 30.dp)
         parkingLotData?.forEach {
             ParkingMarkerInfoWindow(
                 state = MarkerState(position = LatLng(it.latitude, it.longitude)),
@@ -337,7 +344,6 @@ fun ParkingInfoBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState()
     val sheetColor = MaterialTheme.colorScheme.primaryContainer
-    val textColor = MaterialTheme.colorScheme.primary
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { displayState.onDisplayStateChange(false) },
@@ -345,13 +351,82 @@ fun ParkingInfoBottomSheet(
             containerColor = sheetColor,
             modifier = Modifier.fillMaxSize()
         ) {
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text("Carpark ID: ${parkingData.carparkID}", color = textColor)
-                Text("Carpark Name: ${parkingData.carparkName}", color = textColor)
-                Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = textColor)
-                Text("Available Lots: ${parkingData.availableLots}", color = textColor)
+            ParkingInfoTabs(parkingData = parkingData)
+        }
+    }
+}
+
+@Composable
+fun ParkingInfoTabs(parkingData: PichuParkingData) {
+    var tabIndex by remember { mutableStateOf(0)}
+    val textColor = MaterialTheme.colorScheme.primary
+    val tabs = listOf("Details", "Rates")
+    Column(modifier = Modifier.padding(10.dp)) {
+        ParkingInfoTitle(parkingData = parkingData, modifier = Modifier.padding(bottom = 10.dp))
+        TabRow(selectedTabIndex = tabIndex, modifier = Modifier.padding(bottom = 10.dp)) {
+            tabs.forEachIndexed { index, title ->
+                Tab(text = { Text(title) },
+                    selected = tabIndex == index,
+                    onClick = { tabIndex = index },
+                )
             }
         }
+        when (tabIndex) {
+            0 -> ParkingLotDetails(parkingData, textColor)
+            1 -> ParkingLotRates()
+        }
+    }
+}
+
+@Composable
+fun ParkingInfoTitle(parkingData: PichuParkingData, modifier: Modifier){
+    val distance: String = getDistanceStringFromCurrent(parkingData)
+    val titleColor = MaterialTheme.colorScheme.primary
+    Column(modifier=modifier) {
+        Text(parkingData.carparkName, fontSize = 20.sp,textAlign = TextAlign.Left, color = titleColor, fontWeight = FontWeight.Bold,)
+        Text("$distance Away", color = titleColor)
+    }
+}
+
+fun getDistanceStringFromCurrent(parkingData: PichuParkingData): String {
+    val currentLocation = LatLng(0.0,0.0) // TODO: pass current location down
+    val parkingLocation = LatLng(parkingData.latitude, parkingData.longitude)
+    val distanceKM = distanceBetweenTwoCoordinates(currentLocation,parkingLocation)
+    val roundedDistance: Double = (distanceKM * 100.0).roundToInt() / 100.0
+    return formatDistance(roundedDistance)
+}
+
+fun formatDistance(distanceKM: Double): String {
+    val distanceM = distanceKM / 1000.0
+    return if (distanceM < 1) {
+        "$distanceM m"
+    } else {
+        "$distanceKM km"
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun PreviewParkingInfoTabs() {
+    val sampleParkingData = PichuParkingData(
+        "123456","abc carpark",0.0,0.0,"",123
+    )
+    ParkingInfoTabs(sampleParkingData)
+}
+
+@Composable
+fun ParkingLotDetails(parkingData: PichuParkingData, textColor: Color) {
+    Column {
+        Text("Carpark ID: ${parkingData.carparkID}", color = textColor)
+        Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = textColor)
+        Text("Available Lots: ${parkingData.availableLots}", color = textColor)
+    }
+}
+
+@Composable
+fun ParkingLotRates(parkingRates: PichuParkingRates? = null, textColor: Color? = null) {
+    Column {
+        Text("placeholder rates")
     }
 }
 
@@ -361,11 +436,10 @@ data class BottomSheetDisplayState(
 
 
 @Composable
-private fun defaultParkingIconFromResource(sizeDp: Int): BitmapDescriptor? {
+private fun defaultParkingIconFromResource(resourceID: Int, sizeDp: Dp): BitmapDescriptor? {
     val context = LocalContext.current
-    val parkingIconResourceID: Int = R.drawable.parking_marker
-    val parkingIconDrawable = ContextCompat.getDrawable(context, parkingIconResourceID)
-    val sizePx = with(LocalDensity.current) { sizeDp.dp.toPx().toInt() }
+    val parkingIconDrawable = ContextCompat.getDrawable(context, resourceID)
+    val sizePx = with(LocalDensity.current) { sizeDp.toPx().toInt() }
 
     parkingIconDrawable?.setBounds(0, 0, sizePx, sizePx)
     val parkingIconBitmap =
