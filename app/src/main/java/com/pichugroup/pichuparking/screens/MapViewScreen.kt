@@ -317,8 +317,8 @@ fun ParkingMarkerInfoWindow(
     yOffset: Float = 0F,
     parkingData: PichuParkingData,
 ) {
-    var showBottomSheet by remember { mutableStateOf(true) }
-    var displayState by remember { mutableStateOf<BottomSheetDisplayState?>(null) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var displayState by remember(showBottomSheet) { mutableStateOf<BottomSheetDisplayState?>(null) }
     displayState?.run {
         ParkingInfoBottomSheet(
             parkingData = parkingData,
@@ -326,13 +326,20 @@ fun ParkingMarkerInfoWindow(
             displayState = this,
         )
     }
-    MarkerInfoWindow(
-        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset),
-    ) {
-        displayState = BottomSheetDisplayState { newDisplayState ->
-            showBottomSheet = newDisplayState
+    LaunchedEffect(showBottomSheet) {
+        if (showBottomSheet) {
+            displayState = BottomSheetDisplayState {
+                newDisplayState -> showBottomSheet = newDisplayState
+            }
         }
     }
+    MarkerInfoWindow(
+        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset),
+        onClick = {
+            showBottomSheet = true
+            true
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
