@@ -328,18 +328,19 @@ fun ParkingMarkerInfoWindow(
     }
     LaunchedEffect(showBottomSheet) {
         if (showBottomSheet) {
-            displayState = BottomSheetDisplayState {
-                newDisplayState -> showBottomSheet = newDisplayState
+            displayState = BottomSheetDisplayState { newDisplayState ->
+                showBottomSheet = newDisplayState
             }
         }
     }
-    MarkerInfoWindow(
-        state = state, title = title, icon = icon, infoWindowAnchor = Offset(xOffset, yOffset),
+    MarkerInfoWindow(state = state,
+        title = title,
+        icon = icon,
+        infoWindowAnchor = Offset(xOffset, yOffset),
         onClick = {
             showBottomSheet = true
             true
-        }
-    )
+        })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -365,14 +366,15 @@ fun ParkingInfoBottomSheet(
 
 @Composable
 fun ParkingInfoTabs(parkingData: PichuParkingData) {
-    var tabIndex by remember { mutableStateOf(0)}
+    var tabIndex by remember { mutableStateOf(0) }
     val textColor = MaterialTheme.colorScheme.primary
     val tabs = listOf("Details", "Rates")
     Column(modifier = Modifier.padding(10.dp)) {
         ParkingInfoTitle(parkingData = parkingData, modifier = Modifier.padding(bottom = 10.dp))
         TabRow(selectedTabIndex = tabIndex, modifier = Modifier.padding(bottom = 10.dp)) {
             tabs.forEachIndexed { index, title ->
-                Tab(text = { Text(title) },
+                Tab(
+                    text = { Text(title) },
                     selected = tabIndex == index,
                     onClick = { tabIndex = index },
                 )
@@ -386,19 +388,28 @@ fun ParkingInfoTabs(parkingData: PichuParkingData) {
 }
 
 @Composable
-fun ParkingInfoTitle(parkingData: PichuParkingData, modifier: Modifier){
-    val distance: String = getDistanceStringFromCurrent(parkingData)
+fun ParkingInfoTitle(
+    parkingData: PichuParkingData,
+    currentLocation: LatLng = LatLng(0.0, 0.0),
+    modifier: Modifier
+) {
+    val distance: String = getDistanceStringFromCurrent(parkingData, currentLocation)
     val titleColor = MaterialTheme.colorScheme.primary
-    Column(modifier=modifier) {
-        Text(parkingData.carparkName, fontSize = 20.sp,textAlign = TextAlign.Left, color = titleColor, fontWeight = FontWeight.Bold,)
+    Column(modifier = modifier) {
+        Text(
+            parkingData.carparkName,
+            fontSize = 20.sp,
+            textAlign = TextAlign.Left,
+            color = titleColor,
+            fontWeight = FontWeight.Bold,
+        )
         Text("$distance Away", color = titleColor)
     }
 }
 
-fun getDistanceStringFromCurrent(parkingData: PichuParkingData): String {
-    val currentLocation = LatLng(0.0,0.0) // TODO: pass current location down
+fun getDistanceStringFromCurrent(parkingData: PichuParkingData, currentLocation: LatLng): String {
     val parkingLocation = LatLng(parkingData.latitude, parkingData.longitude)
-    val distanceKM = distanceBetweenTwoCoordinates(currentLocation,parkingLocation)
+    val distanceKM = distanceBetweenTwoCoordinates(currentLocation, parkingLocation)
     val roundedDistance: Double = (distanceKM * 100.0).roundToInt() / 100.0
     return formatDistance(roundedDistance)
 }
@@ -416,7 +427,7 @@ fun formatDistance(distanceKM: Double): String {
 @Composable
 fun PreviewParkingInfoTabs() {
     val sampleParkingData = PichuParkingData(
-        "123456","abc carpark",0.0,0.0,"",123
+        "123456", "abc carpark", 0.0, 0.0, "", 123
     )
     ParkingInfoTabs(sampleParkingData)
 }

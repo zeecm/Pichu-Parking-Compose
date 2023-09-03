@@ -54,7 +54,7 @@ android {
 }
 
 dependencies {
-    val ktorVersion = "2.3.3"
+    val ktorVersion = "2.3.4"
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
@@ -63,12 +63,13 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("com.google.maps.android:maps-compose:2.13.0")
+    implementation("com.google.maps.android:maps-compose:2.14.0")
     implementation("com.google.android.gms:play-services-maps:18.1.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("com.google.accompanist:accompanist-permissions:0.25.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.25.0") // latest version working for sdk 31
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.25.0")
     implementation("androidx.compose.material3:material3:1.1.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
     implementation("com.google.android.material:material:1.9.0")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
