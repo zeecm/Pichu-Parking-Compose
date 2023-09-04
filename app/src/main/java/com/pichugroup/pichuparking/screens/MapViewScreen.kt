@@ -90,6 +90,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.pichugroup.pichuparking.R
 import com.pichugroup.pichuparking.api.PichuParkingAPIClient
 import com.pichugroup.pichuparking.api.PichuParkingData
+import com.pichugroup.pichuparking.api.PichuParkingLots
 import com.pichugroup.pichuparking.api.PichuParkingRates
 import com.pichugroup.pichuparking.permissions.PermissionAlertDialog
 import com.pichugroup.pichuparking.permissions.RationaleState
@@ -160,7 +161,7 @@ fun MapsContent() {
     val parkingAPIClient: PichuParkingAPIClient = remember {
         PichuParkingAPIClient()
     }
-    var parkingLotData by remember { mutableStateOf<List<PichuParkingData>?>(null) }
+    var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
     var requirePermissionPrompt by remember { mutableStateOf(true) }
     Box {
         CheckLocationPermissions(fineLocationPermissionState)
@@ -279,7 +280,7 @@ private fun cameraUpdate(latLng: LatLng, zoom: Float): CameraUpdate {
 fun DisplayGoogleMaps(
     cameraPositionState: CameraPositionState,
     enableLocation: Boolean = false,
-    parkingLotData: List<PichuParkingData>? = null,
+    parkingLotData: List<PichuParkingLots>? = null,
 ) {
     val uiSettings by remember {
         mutableStateOf(
@@ -313,9 +314,7 @@ fun ParkingMarkerInfoWindow(
     state: MarkerState,
     title: String? = null,
     icon: BitmapDescriptor? = null,
-    xOffset: Float = .5F,
-    yOffset: Float = 0F,
-    parkingData: PichuParkingData,
+    parkingData: PichuParkingLots,
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var displayState by remember(showBottomSheet) { mutableStateOf<BottomSheetDisplayState?>(null) }
@@ -336,7 +335,6 @@ fun ParkingMarkerInfoWindow(
     MarkerInfoWindow(state = state,
         title = title,
         icon = icon,
-        infoWindowAnchor = Offset(xOffset, yOffset),
         onClick = {
             showBottomSheet = true
             true
@@ -346,7 +344,7 @@ fun ParkingMarkerInfoWindow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParkingInfoBottomSheet(
-    parkingData: PichuParkingData,
+    parkingData: PichuParkingLots,
     showBottomSheet: Boolean,
     displayState: BottomSheetDisplayState,
 ) {
@@ -365,7 +363,7 @@ fun ParkingInfoBottomSheet(
 }
 
 @Composable
-fun ParkingInfoTabs(parkingData: PichuParkingData) {
+fun ParkingInfoTabs(parkingData: PichuParkingLots) {
     var tabIndex by remember { mutableStateOf(0) }
     val textColor = MaterialTheme.colorScheme.primary
     val tabs = listOf("Details", "Rates")
@@ -426,14 +424,14 @@ fun formatDistance(distanceKM: Double): String {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PreviewParkingInfoTabs() {
-    val sampleParkingData = PichuParkingData(
-        "123456", "abc carpark", 0.0, 0.0, "", 123
+    val sampleParkingData = PichuParkingLots(
+        "123456", "abc carpark", 0.0, 0.0, "", 123, "URA"
     )
     ParkingInfoTabs(sampleParkingData)
 }
 
 @Composable
-fun ParkingLotDetails(parkingData: PichuParkingData, textColor: Color) {
+fun ParkingLotDetails(parkingData: PichuParkingLots, textColor: Color) {
     Column {
         Text("Carpark ID: ${parkingData.carparkID}", color = textColor)
         Text("Vehicle Type: ${parkingData.translatedVehicleCategory}", color = textColor)

@@ -1,6 +1,7 @@
 package com.pichugroup.pichuparking.api
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.pichugroup.pichuparking.BuildConfig
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
@@ -64,7 +65,7 @@ internal class PichuParkingAPIClient {
         vehicleCategories: Set<VehicleCategory> = setOf(
             VehicleCategory.CAR, VehicleCategory.MOTORCYCLE
         )
-    ): List<PichuParkingData>? {
+    ): List<PichuParkingLots>? {
         return try {
             val parkingLotResponse = fetchParkingLotData()
             parseAndFilterParkingData(parkingLotResponse, vehicleCategories)
@@ -81,9 +82,10 @@ internal class PichuParkingAPIClient {
 
     private suspend fun parseAndFilterParkingData(
         parkingLotResponse: HttpResponse, vehicleCategories: Set<VehicleCategory>
-    ): List<PichuParkingData> {
-        val pichuResponse = deserializePichuParkingResponse(parkingLotResponse.body())
-        return pichuResponse.data.filter { data ->
+    ): List<PichuParkingLots> {
+        val pichuResponse: PichuParkingAPIParkingLotResponse = deserializePichuParkingResponse(parkingLotResponse.body())
+        val lotData: Set<PichuParkingLots> = pichuResponse.data
+        return lotData.filter { data ->
             vehicleCategories.any { category ->
                 category.description == data.translatedVehicleCategory
             }
@@ -108,10 +110,13 @@ internal class PichuParkingAPIClient {
     }
 
 
-    private fun deserializePichuParkingResponse(jsonText: String): PichuParkingAPIResponse {
+
+    private inline fun <reified T : PichuParkingAPIResponse<SubT>, reified SubT : PichuParkingData> deserializePichuParkingResponse(jsonText: String): T {
         val gson = Gson()
-        val pichuResponse = gson.fromJson(jsonText, PichuParkingAPIResponse::class.java)
-        pichuResponse.CheckValid()
+        val typeToken = object : TypeToken<T>() {}.type
+        val pichuResponse = gson.fromJson<T>(jsonText, typeToken)
+        pichuResponse.checkValid()
         return pichuResponse
     }
+
 }

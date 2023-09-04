@@ -12,12 +12,12 @@ internal class PichuParkingAPITest {
     }
     @Test
     fun testGetParkingLotsIterable() {
-        val parkingData: List<PichuParkingData>?
+        val parkingData: List<PichuParkingLots>?
         runBlocking {
             parkingData = parkingAPIClient.getParkingLots(VehicleCategory.all)
         }
         if (parkingData != null) {
-            assert(parkingData.all { it is PichuParkingData })
+            assert(parkingData.all { it is PichuParkingLots })
         }
     }
 }
