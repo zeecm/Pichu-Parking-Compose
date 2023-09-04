@@ -18,6 +18,7 @@ import java.nio.channels.UnresolvedAddressException
 private val logger = KotlinLogging.logger {}
 
 
+
 internal class PichuParkingAPIClient {
     private var requestHeader: MutableMap<String, String> = mutableMapOf(
         "x-api-key" to BuildConfig.PICHU_PARKING_API_KEY
@@ -32,7 +33,9 @@ internal class PichuParkingAPIClient {
     companion object {
         private const val API_INVOKE_URL: String =
             "https://q7p4ehtedd.execute-api.ap-southeast-1.amazonaws.com/prod/"
-        private const val PARKING_LOTS_RESOURCE: String = "parking-lots"
+        enum class ParkingData(val endpoint: String) {
+            LOTS("parking-lots"), RATES("parking-rates")
+        }
     }
 
     private suspend fun makeAPICall(
@@ -67,7 +70,7 @@ internal class PichuParkingAPIClient {
         )
     ): List<PichuParkingLots>? {
         return try {
-            val parkingLotResponse = fetchParkingLotData()
+            val parkingLotResponse = fetchParkingData(ParkingData.LOTS)
             parseAndFilterParkingData(parkingLotResponse, vehicleCategories)
         } catch (e: Exception) {
             handleException(e)
@@ -75,15 +78,27 @@ internal class PichuParkingAPIClient {
         }
     }
 
-    private suspend fun fetchParkingLotData(): HttpResponse {
-        val parkingLotEndpoint = API_INVOKE_URL + PARKING_LOTS_RESOURCE
+    suspend fun getParkingRates(): List<PichuParkingRates>? {
+        return try {
+            val parkingRateResponse = fetchParkingData(ParkingData.RATES)
+            val pichuResponse: PichuParkingAPIParkingRatesResponse = deserializePichuParkingResponse(parkingRateResponse.body())
+            return pichuResponse.data.toList()
+        } catch (e: Exception) {
+            handleException(e)
+            null
+        }
+    }
+
+    private suspend fun fetchParkingData(parkingData: ParkingData): HttpResponse {
+        val parkingLotEndpoint = API_INVOKE_URL + parkingData.endpoint
         return makeAPICall(endpoint = parkingLotEndpoint, headers = requestHeader)
     }
 
     private suspend fun parseAndFilterParkingData(
         parkingLotResponse: HttpResponse, vehicleCategories: Set<VehicleCategory>
     ): List<PichuParkingLots> {
-        val pichuResponse: PichuParkingAPIParkingLotResponse = deserializePichuParkingResponse(parkingLotResponse.body())
+        val pichuResponse: PichuParkingAPIParkingLotResponse =
+            deserializePichuParkingResponse(parkingLotResponse.body())
         val lotData: Set<PichuParkingLots> = pichuResponse.data
         return lotData.filter { data ->
             vehicleCategories.any { category ->
@@ -110,8 +125,9 @@ internal class PichuParkingAPIClient {
     }
 
 
-
-    private inline fun <reified T : PichuParkingAPIResponse<SubT>, reified SubT : PichuParkingData> deserializePichuParkingResponse(jsonText: String): T {
+    private inline fun <reified T : PichuParkingAPIResponse<SubT>, reified SubT : PichuParkingData> deserializePichuParkingResponse(
+        jsonText: String
+    ): T {
         val gson = Gson()
         val typeToken = object : TypeToken<T>() {}.type
         val pichuResponse = gson.fromJson<T>(jsonText, typeToken)

@@ -15,10 +15,7 @@ sealed class PichuParkingAPIResponse<T : PichuParkingData> {
     abstract var data: Set<T>
 
     fun checkValid(): Boolean {
-        if (this.timestamp.isNullOrBlank() ||
-            this.data.isNullOrEmpty() ||
-            !this.data.all { it.checkValid() }
-        ) {
+        if (this.timestamp.isNullOrBlank() || this.data.isNullOrEmpty() || !this.data.all { it.checkValid() }) {
             throw IllegalArgumentException("invalid data for PichuParkingAPIResponse")
         }
         return true
@@ -28,12 +25,12 @@ sealed class PichuParkingAPIResponse<T : PichuParkingData> {
 data class PichuParkingAPIParkingLotResponse(
     @SerializedName("timestamp") override var timestamp: String,
     @SerializedName("data") override var data: Set<PichuParkingLots>,
-): PichuParkingAPIResponse<PichuParkingLots>()
+) : PichuParkingAPIResponse<PichuParkingLots>()
 
 data class PichuParkingAPIParkingRatesResponse(
     override var timestamp: String,
     override var data: Set<PichuParkingRates>,
-): PichuParkingAPIResponse<PichuParkingRates>()
+) : PichuParkingAPIResponse<PichuParkingRates>()
 
 sealed class PichuParkingData {
     abstract val carparkID: String
@@ -66,12 +63,7 @@ data class PichuParkingLots(
         get() = vehicleCategoryMap[vehicleCategory] ?: "Unknown"
 
     override fun checkValid(): Boolean {
-        if (carparkID.isNullOrBlank() &&
-            carparkName.isNullOrBlank() &&
-            latitude == null &&
-            longitude == null &&
-            vehicleCategory.isNullOrBlank() &&
-            availableLots == null) {
+        if (carparkID.isNullOrBlank() && carparkName.isNullOrBlank() && latitude == null && longitude == null && vehicleCategory.isNullOrBlank() && availableLots == null) {
             throw IllegalArgumentException("invalid data for PichuParkingLots")
         }
         return true
@@ -94,21 +86,8 @@ data class PichuParkingRates(
     @SerializedName("sundayPHMin") val sundayPHMin: String,
     @SerializedName("sundayPHRate") val sundayPHRate: String
 ) : PichuParkingData() {
-    override fun checkValid(): Boolean{
-        if (carparkID.isNullOrBlank() &&
-            carparkName.isNullOrBlank() &&
-            latitude == null &&
-            longitude == null &&
-            vehicleCategory.isNullOrBlank() &&
-            parkingSystem.isNullOrBlank() &&
-            capacity == null &&
-            timeRange.isNullOrBlank() &&
-            weekdayMin.isNullOrBlank() &&
-            weekdayRate.isNullOrBlank() &&
-            saturdayMin.isNullOrBlank() &&
-            saturdayRate.isNullOrBlank() &&
-            sundayPHMin.isNullOrBlank() &&
-            sundayPHRate.isNullOrBlank()) {
+    override fun checkValid(): Boolean {
+        if (carparkID.isNullOrBlank() && carparkName.isNullOrBlank() && latitude == null && longitude == null && vehicleCategory.isNullOrBlank() && parkingSystem.isNullOrBlank() && capacity == null && timeRange.isNullOrBlank() && weekdayMin.isNullOrBlank() && weekdayRate.isNullOrBlank() && saturdayMin.isNullOrBlank() && saturdayRate.isNullOrBlank() && sundayPHMin.isNullOrBlank() && sundayPHRate.isNullOrBlank()) {
             throw IllegalArgumentException("invalid data for PichuParkingRates")
         }
         return true

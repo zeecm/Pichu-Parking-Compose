@@ -20,4 +20,15 @@ internal class PichuParkingAPITest {
             assert(parkingData.all { it is PichuParkingLots })
         }
     }
+
+    @Test
+    fun testGetParkingRatesIterable() {
+        val parkingData: List<PichuParkingRates>?
+        runBlocking {
+            parkingData = parkingAPIClient.getParkingRates()
+        }
+        if (parkingData != null) {
+            assert(parkingData.all { it is PichuParkingRates })
+        }
+    }
 }
