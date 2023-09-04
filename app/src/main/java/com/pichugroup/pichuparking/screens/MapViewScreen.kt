@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -55,7 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
@@ -63,7 +61,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -307,20 +304,24 @@ fun DisplayGoogleMaps(
         val parkingIcon =
             defaultParkingIconFromResource(resourceID = R.drawable.parking_marker, sizeDp = 30.dp)
         parkingLotData?.forEach {
-            ParkingMarkerInfoWindow(
-                state = MarkerState(position = LatLng(it.latitude, it.longitude)),
+            ParkingMarkerInfoWindow(state = MarkerState(
+                position = LatLng(
+                    it.latitude, it.longitude
+                )
+            ),
                 title = it.carparkName,
                 icon = parkingIcon,
                 parkingData = it,
-                ratesData = parkingRateData?.let { rates -> getParkingRateForLot(it, rates) }
-            )
+                ratesData = parkingRateData?.let { rates -> getParkingRateForLot(it, rates) })
         }
     }
 }
 
-fun getParkingRateForLot(parkingLotData: PichuParkingLots, parkingRateData: List<PichuParkingRates>): List<PichuParkingRates> {
+fun getParkingRateForLot(
+    parkingLotData: PichuParkingLots, parkingRateData: List<PichuParkingRates>
+): List<PichuParkingRates> {
     val carparkID = parkingLotData.carparkID
-    return parkingRateData.filter { data -> data.carparkID == carparkID}
+    return parkingRateData.filter { data -> data.carparkID == carparkID }
 }
 
 @Composable
@@ -348,13 +349,10 @@ fun ParkingMarkerInfoWindow(
             }
         }
     }
-    MarkerInfoWindow(state = state,
-        title = title,
-        icon = icon,
-        onClick = {
-            showBottomSheet = true
-            true
-        })
+    MarkerInfoWindow(state = state, title = title, icon = icon, onClick = {
+        showBottomSheet = true
+        true
+    })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -404,9 +402,7 @@ fun ParkingInfoTabs(parkingData: PichuParkingLots, ratesData: List<PichuParkingR
 
 @Composable
 fun ParkingInfoTitle(
-    parkingData: PichuParkingLots,
-    currentLocation: LatLng = LatLng(0.0, 0.0),
-    modifier: Modifier
+    parkingData: PichuParkingLots, currentLocation: LatLng = LatLng(0.0, 0.0), modifier: Modifier
 ) {
     val distance: String = getDistanceStringFromCurrent(parkingData, currentLocation)
     val titleColor = MaterialTheme.colorScheme.primary
@@ -419,7 +415,12 @@ fun ParkingInfoTitle(
             fontWeight = FontWeight.Bold,
         )
         Text("$distance Away", color = titleColor)
-        Text("Data Provided By: ${parkingData.agency}", color = titleColor, fontSize = 10.sp, modifier = Modifier.padding(top=10.dp, end=10.dp))
+        Text(
+            "Data Provided By: ${parkingData.agency}",
+            color = titleColor,
+            fontSize = 10.sp,
+            modifier = Modifier.padding(top = 10.dp, end = 10.dp)
+        )
 
     }
 }
@@ -453,14 +454,18 @@ fun ParkingLotDetails(parkingData: PichuParkingLots, textColor: Color) {
 fun ParkingLotRates(parkingRates: List<PichuParkingRates>? = null, textColor: Color) {
     Column {
         parkingRates?.forEach {
-            ElevatedCard(modifier = Modifier
-                .fillMaxWidth()
-                .padding(5.dp)) {
+            ElevatedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp)
+            ) {
                 Column(modifier = Modifier.padding(5.dp)) {
                     Text("Time Period: ${it.timeRange}", color = textColor)
                     Text("Weekday: ${it.weekdayRate} per ${it.weekdayMin}", color = textColor)
                     Text("Saturday: ${it.saturdayRate} per ${it.saturdayMin}", color = textColor)
-                    Text("Sundays & PH: ${it.sundayPHRate} per ${it.sundayPHMin}", color = textColor)
+                    Text(
+                        "Sundays & PH: ${it.sundayPHRate} per ${it.sundayPHMin}", color = textColor
+                    )
                 }
             }
         }
