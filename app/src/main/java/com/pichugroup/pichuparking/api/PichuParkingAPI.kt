@@ -18,7 +18,6 @@ import java.nio.channels.UnresolvedAddressException
 private val logger = KotlinLogging.logger {}
 
 
-
 internal class PichuParkingAPIClient {
     private var requestHeader: MutableMap<String, String> = mutableMapOf(
         "x-api-key" to BuildConfig.PICHU_PARKING_API_KEY
@@ -33,6 +32,7 @@ internal class PichuParkingAPIClient {
     companion object {
         private const val API_INVOKE_URL: String =
             "https://q7p4ehtedd.execute-api.ap-southeast-1.amazonaws.com/prod/"
+
         enum class ParkingData(val endpoint: String) {
             LOTS("parking-lots"), RATES("parking-rates")
         }
@@ -81,7 +81,8 @@ internal class PichuParkingAPIClient {
     suspend fun getParkingRates(): List<PichuParkingRates>? {
         return try {
             val parkingRateResponse = fetchParkingData(ParkingData.RATES)
-            val pichuResponse: PichuParkingAPIParkingRatesResponse = deserializePichuParkingResponse(parkingRateResponse.body())
+            val pichuResponse: PichuParkingAPIParkingRatesResponse =
+                deserializePichuParkingResponse(parkingRateResponse.body())
             return pichuResponse.data.toList()
         } catch (e: Exception) {
             handleException(e)

@@ -6,10 +6,12 @@ import org.junit.Test
 
 internal class PichuParkingAPITest {
     private lateinit var parkingAPIClient: PichuParkingAPIClient
+
     @Before
     fun setup() {
         parkingAPIClient = PichuParkingAPIClient()
     }
+
     @Test
     fun testGetParkingLotsIterable() {
         val parkingData: List<PichuParkingLots>?

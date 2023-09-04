@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -162,13 +164,18 @@ fun MapsContent() {
         PichuParkingAPIClient()
     }
     var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
+    var parkingRates by remember { mutableStateOf<List<PichuParkingRates>?>(null) }
     var requirePermissionPrompt by remember { mutableStateOf(true) }
+    LaunchedEffect(parkingAPIClient) {
+        parkingRates = parkingAPIClient.getParkingRates()
+    }
     Box {
         CheckLocationPermissions(fineLocationPermissionState)
         DisplayGoogleMaps(
             cameraPositionState = cameraPositionState,
             enableLocation = fineLocationPermissionState.allPermissionsGranted,
             parkingLotData = parkingLotData,
+            parkingRateData = parkingRates,
         )
         FloatingActionButton(
             onClick = {
@@ -281,6 +288,7 @@ fun DisplayGoogleMaps(
     cameraPositionState: CameraPositionState,
     enableLocation: Boolean = false,
     parkingLotData: List<PichuParkingLots>? = null,
+    parkingRateData: List<PichuParkingRates>? = null,
 ) {
     val uiSettings by remember {
         mutableStateOf(
@@ -304,9 +312,15 @@ fun DisplayGoogleMaps(
                 title = it.carparkName,
                 icon = parkingIcon,
                 parkingData = it,
+                ratesData = parkingRateData?.let { rates -> getParkingRateForLot(it, rates) }
             )
         }
     }
+}
+
+fun getParkingRateForLot(parkingLotData: PichuParkingLots, parkingRateData: List<PichuParkingRates>): List<PichuParkingRates> {
+    val carparkID = parkingLotData.carparkID
+    return parkingRateData.filter { data -> data.carparkID == carparkID}
 }
 
 @Composable
@@ -315,12 +329,14 @@ fun ParkingMarkerInfoWindow(
     title: String? = null,
     icon: BitmapDescriptor? = null,
     parkingData: PichuParkingLots,
+    ratesData: List<PichuParkingRates>?,
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var displayState by remember(showBottomSheet) { mutableStateOf<BottomSheetDisplayState?>(null) }
     displayState?.run {
         ParkingInfoBottomSheet(
             parkingData = parkingData,
+            ratesData = ratesData,
             showBottomSheet = showBottomSheet,
             displayState = this,
         )
@@ -345,6 +361,7 @@ fun ParkingMarkerInfoWindow(
 @Composable
 fun ParkingInfoBottomSheet(
     parkingData: PichuParkingLots,
+    ratesData: List<PichuParkingRates>?,
     showBottomSheet: Boolean,
     displayState: BottomSheetDisplayState,
 ) {
@@ -357,13 +374,13 @@ fun ParkingInfoBottomSheet(
             containerColor = sheetColor,
             modifier = Modifier.fillMaxSize()
         ) {
-            ParkingInfoTabs(parkingData = parkingData)
+            ParkingInfoTabs(parkingData = parkingData, ratesData = ratesData)
         }
     }
 }
 
 @Composable
-fun ParkingInfoTabs(parkingData: PichuParkingLots) {
+fun ParkingInfoTabs(parkingData: PichuParkingLots, ratesData: List<PichuParkingRates>?) {
     var tabIndex by remember { mutableStateOf(0) }
     val textColor = MaterialTheme.colorScheme.primary
     val tabs = listOf("Details", "Rates")
@@ -380,14 +397,14 @@ fun ParkingInfoTabs(parkingData: PichuParkingLots) {
         }
         when (tabIndex) {
             0 -> ParkingLotDetails(parkingData, textColor)
-            1 -> ParkingLotRates()
+            1 -> ParkingLotRates(ratesData, textColor)
         }
     }
 }
 
 @Composable
 fun ParkingInfoTitle(
-    parkingData: PichuParkingData,
+    parkingData: PichuParkingLots,
     currentLocation: LatLng = LatLng(0.0, 0.0),
     modifier: Modifier
 ) {
@@ -402,6 +419,8 @@ fun ParkingInfoTitle(
             fontWeight = FontWeight.Bold,
         )
         Text("$distance Away", color = titleColor)
+        Text("Data Provided By: ${parkingData.agency}", color = titleColor, fontSize = 10.sp, modifier = Modifier.padding(top=10.dp, end=10.dp))
+
     }
 }
 
@@ -421,15 +440,6 @@ fun formatDistance(distanceKM: Double): String {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun PreviewParkingInfoTabs() {
-    val sampleParkingData = PichuParkingLots(
-        "123456", "abc carpark", 0.0, 0.0, "", 123, "URA"
-    )
-    ParkingInfoTabs(sampleParkingData)
-}
-
 @Composable
 fun ParkingLotDetails(parkingData: PichuParkingLots, textColor: Color) {
     Column {
@@ -440,9 +450,20 @@ fun ParkingLotDetails(parkingData: PichuParkingLots, textColor: Color) {
 }
 
 @Composable
-fun ParkingLotRates(parkingRates: PichuParkingRates? = null, textColor: Color? = null) {
+fun ParkingLotRates(parkingRates: List<PichuParkingRates>? = null, textColor: Color) {
     Column {
-        Text("placeholder rates")
+        parkingRates?.forEach {
+            ElevatedCard(modifier = Modifier
+                .fillMaxWidth()
+                .padding(5.dp)) {
+                Column(modifier = Modifier.padding(5.dp)) {
+                    Text("Time Period: ${it.timeRange}", color = textColor)
+                    Text("Weekday: ${it.weekdayRate} per ${it.weekdayMin}", color = textColor)
+                    Text("Saturday: ${it.saturdayRate} per ${it.saturdayMin}", color = textColor)
+                    Text("Sundays & PH: ${it.sundayPHRate} per ${it.sundayPHMin}", color = textColor)
+                }
+            }
+        }
     }
 }
 
