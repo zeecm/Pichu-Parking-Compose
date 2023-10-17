@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,79 +98,8 @@ fun MapViewScreen() {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapsContent() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val fineLocationPermissionState = rememberMultiplePermissionsState(
-        listOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION,
-        ),
-    )
-    val locationClient = remember {
-        LocationServices.getFusedLocationProviderClient(context)
-    }
-    var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
-    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
-    }
-    var currentZoom by remember { mutableStateOf(15F) }
-    val parkingAPIClient: PichuParkingAPIClient = remember {
-        PichuParkingAPIClient()
-    }
-    var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
-    var parkingRates by remember { mutableStateOf<List<PichuParkingRates>?>(null) }
-    var requirePermissionPrompt by remember { mutableStateOf(true) }
-    LaunchedEffect(parkingAPIClient) {
-        parkingRates = parkingAPIClient.getParkingRates()
-    }
-    Box {
-        CheckLocationPermissions(fineLocationPermissionState)
-        DisplayGoogleMaps(
-            cameraPositionState = cameraPositionState,
-            enableLocation = fineLocationPermissionState.allPermissionsGranted,
-            parkingLotData = parkingLotData,
-            parkingRateData = parkingRates,
-        )
-        FloatingActionButton(
-            onClick = {
-                if (fineLocationPermissionState.allPermissionsGranted) {
-                    scope.launch(Dispatchers.IO) {
-                        currentLatLon = fetchCurrentLocation(locationClient)
-                    }
-                    requirePermissionPrompt = false
-                    currentZoom = cameraPositionState.position.zoom
-                    cameraPositionState.move(cameraUpdate(currentLatLon, currentZoom))
-                } else {
-                    Toast.makeText(context, "Location Permissions not enabled", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            },
-            modifier = Modifier
-                .size(75.dp)
-                .padding(16.dp)
-                .align(Alignment.BottomEnd)
-                .clip(CircleShape)
-        ) {
-            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
-        }
-        FloatingActionButton(
-            onClick = {
-                scope.launch(Dispatchers.IO) {
-                    parkingLotData = parkingAPIClient.getParkingLots()
-                }
-            },
-            modifier = Modifier
-                .size(75.dp)
-                .padding(start = 16.dp, bottom = 30.dp, end = 16.dp)
-                .align(Alignment.BottomStart)
-                .clip(
-                    CircleShape
-                )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh, contentDescription = "Refresh Parking Lot Data"
-            )
-        }
-    }
+
+
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -450,14 +378,101 @@ private fun defaultParkingIconFromResource(resourceID: Int, sizeDp: Dp): BitmapD
     return parkingIconBitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapOptionsButton() {
     var showBottomSheet by remember { mutableStateOf(false) }
     var displayState by remember(showBottomSheet) { mutableStateOf<BottomSheetDisplayState?>(null) }
+
+    //required for location check and parkingapi call
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val fineLocationPermissionState = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION,
+        ),
+    )
+    val locationClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+    var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
+    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
+    }
+    var currentZoom by remember { mutableStateOf(15F) }
+    val parkingAPIClient: PichuParkingAPIClient = remember {
+        PichuParkingAPIClient()
+    }
+    var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
+    var parkingRates by remember { mutableStateOf<List<PichuParkingRates>?>(null) }
+    var requirePermissionPrompt by remember { mutableStateOf(true) }
+
+    //Boolean for mapoptions toggle mode
+    val parkingLotIcon = false;
+
+    LaunchedEffect(parkingAPIClient) {
+        parkingRates = parkingAPIClient.getParkingRates()
+    }
+    Box {
+        CheckLocationPermissions(fineLocationPermissionState)
+        DisplayGoogleMaps(
+            cameraPositionState = cameraPositionState,
+            enableLocation = fineLocationPermissionState.allPermissionsGranted,
+            parkingLotData = parkingLotData,
+            parkingRateData = parkingRates,
+        )
+        FloatingActionButton(
+            onClick = {
+                if (fineLocationPermissionState.allPermissionsGranted) {
+                    scope.launch(Dispatchers.IO) {
+                        currentLatLon = fetchCurrentLocation(locationClient)
+                    }
+                    requirePermissionPrompt = false
+                    currentZoom = cameraPositionState.position.zoom
+                    cameraPositionState.move(cameraUpdate(currentLatLon, currentZoom))
+                } else {
+                    Toast.makeText(context, "Location Permissions not enabled", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            },
+            modifier = Modifier
+                .size(75.dp)
+                .padding(16.dp)
+                .align(Alignment.BottomEnd)
+                .clip(CircleShape)
+        ) {
+            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
+        }
+
+    }
+
+    // Define the list of map options with associated actions
+    val mapOptions = listOf(
+        MapOption("Display Markers", R.drawable.test) {
+            // Action for "Display Markers" option
+            if (parkingLotIcon) { //not sure why not reacting
+                scope.launch(Dispatchers.IO) {
+                    parkingLotData = null
+                }
+            }
+            else {
+                scope.launch(Dispatchers.IO) {
+                    parkingLotData = parkingAPIClient.getParkingLots()
+                }
+            }
+
+        },
+//        MapOption("Function 1", R.drawable.ic_function1) {
+//            // Action for "Function 1" option
+//            println("Function 1 selected")
+//        }
+    )
+
     displayState?.run {
         MapOptionsScreen(
             showBottomSheet = showBottomSheet,
             displayState = this,
+            mapOptions = mapOptions // Pass the list of map options
         )
     }
     LaunchedEffect(showBottomSheet) {
@@ -496,22 +511,18 @@ fun MapOptionItem(option: MapOption, onOptionSelected: (MapOption) -> Unit) {
     }
 }
 
-data class MapOption(val title: String, val iconResId: Int)
+data class MapOption(val title: String, val iconResId: Int, val action: () -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapOptionsScreen(
     showBottomSheet: Boolean,
-    displayState: BottomSheetDisplayState
+    displayState: BottomSheetDisplayState,
+    mapOptions: List<MapOption> // Pass the list of map options
 ) {
     val sheetState = rememberModalBottomSheetState()
     val sheetColor = MaterialTheme.colorScheme.primaryContainer
-    val mapOptions = listOf(
-        MapOption("Display Markers", R.drawable.test),
-//        MapOption("Function 1", R.drawable.ic_function1),
-//        MapOption("Function 2", R.drawable.ic_function2),
-        // Add more options as needed
-    )
+
     if (showBottomSheet) {
         ModalBottomSheet(
             onDismissRequest = { displayState.onDisplayStateChange(false) },
@@ -521,7 +532,7 @@ fun MapOptionsScreen(
         ) {
             FilterOptions(options = mapOptions, onOptionSelected = { selectedOption ->
                 // Handle the selected option here
-
+                selectedOption.action()
             })
         }
     }
