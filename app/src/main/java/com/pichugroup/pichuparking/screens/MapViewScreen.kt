@@ -2,7 +2,6 @@ package com.pichugroup.pichuparking.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.widget.Toast
@@ -19,29 +18,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,14 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -104,117 +90,16 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapViewScreen() {
-    var isClicked by remember { mutableStateOf(false) }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "Scaffold Example") },
-                actions = {
-                    IconButton(onClick = { isClicked = !isClicked }) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Show menu filter chips"
-                        )
-                    }
-                    if (isClicked) {
-                        FilterChips()
-                    }
-                },
-                modifier = Modifier
-                    .padding(start = 10.dp, end = 10.dp, top = 20.dp, bottom = 20.dp)
-                    .clip(RoundedCornerShape(90.dp)),
-                colors = centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                ),
-            )
-        },
-        content = {
-            Box {
-                MapsContent()
-            }
-        },
-    )
-    MapOptionsScreen()
+    MapsContent()
+    MapOptionsButton()
 }
 
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapsContent() {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val fineLocationPermissionState = rememberMultiplePermissionsState(
-        listOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION,
-        ),
-    )
-    val locationClient = remember {
-        LocationServices.getFusedLocationProviderClient(context)
-    }
-    var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
-    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
-    }
-    var currentZoom by remember { mutableStateOf(15F) }
-    val parkingAPIClient: PichuParkingAPIClient = remember {
-        PichuParkingAPIClient()
-    }
-    var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
-    var parkingRates by remember { mutableStateOf<List<PichuParkingRates>?>(null) }
-    var requirePermissionPrompt by remember { mutableStateOf(true) }
-    LaunchedEffect(parkingAPIClient) {
-        parkingRates = parkingAPIClient.getParkingRates()
-    }
-    Box {
-        CheckLocationPermissions(fineLocationPermissionState)
-        DisplayGoogleMaps(
-            cameraPositionState = cameraPositionState,
-            enableLocation = fineLocationPermissionState.allPermissionsGranted,
-            parkingLotData = parkingLotData,
-            parkingRateData = parkingRates,
-        )
-        FloatingActionButton(
-            onClick = {
-                if (fineLocationPermissionState.allPermissionsGranted) {
-                    scope.launch(Dispatchers.IO) {
-                        currentLatLon = fetchCurrentLocation(locationClient)
-                    }
-                    requirePermissionPrompt = false
-                    currentZoom = cameraPositionState.position.zoom
-                    cameraPositionState.move(cameraUpdate(currentLatLon, currentZoom))
-                } else {
-                    Toast.makeText(context, "Location Permissions not enabled", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            },
-            modifier = Modifier
-                .size(75.dp)
-                .padding(16.dp)
-                .align(Alignment.BottomEnd)
-                .clip(CircleShape)
-        ) {
-            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
-        }
-        FloatingActionButton(
-            onClick = {
-                scope.launch(Dispatchers.IO) {
-                    parkingLotData = parkingAPIClient.getParkingLots()
-                }
-            },
-            modifier = Modifier
-                .size(75.dp)
-                .padding(start = 16.dp, bottom = 30.dp, end = 16.dp)
-                .align(Alignment.BottomStart)
-                .clip(
-                    CircleShape
-                )
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh, contentDescription = "Refresh Parking Lot Data"
-            )
-        }
-    }
+
+
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -493,146 +378,118 @@ private fun defaultParkingIconFromResource(resourceID: Int, sizeDp: Dp): BitmapD
     return parkingIconBitmap?.let { BitmapDescriptorFactory.fromBitmap(it) }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun FilterChips() {
-    HorizontalGrid(
-        spacing = 7.dp, modifier = Modifier.padding(7.dp)
-    ) {
-        var selected by remember { mutableStateOf(false) }
-        var selected2 by remember { mutableStateOf(false) }
-        FilterChip(
-            onClick = { selected = !selected },
-            label = {
-                Text("Filter chip")
-            },
-            selected = selected,
-            leadingIcon = if (selected) {
-                {
-                    Icon(
-                        imageVector = Icons.Filled.Done,
-                        contentDescription = "Done icon",
-                        modifier = Modifier.size(FilterChipDefaults.IconSize)
-                    )
-                }
-            } else {
-                null
-            },
-        )
+fun MapOptionsButton() {
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var displayState by remember(showBottomSheet) { mutableStateOf<BottomSheetDisplayState?>(null) }
 
-        FilterChip(
-            onClick = { selected2 = !selected2 },
-            label = {
-                Text("Filter chip 2")
-            },
-            selected = selected2,
-            leadingIcon = if (selected2) {
-                {
-                    Icon(
-                        imageVector = Icons.Filled.Done,
-                        contentDescription = "Done icon",
-                        modifier = Modifier.size(FilterChipDefaults.IconSize)
-                    )
-                }
-            } else {
-                null
-            },
-        )
+    //required for location check and parkingapi call
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val fineLocationPermissionState = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION,
+        ),
+    )
+    val locationClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
     }
-}
+    var currentLatLon by remember { mutableStateOf(LatLng(1.35, 103.87)) }
+    val cameraPositionState: CameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(currentLatLon, 15f)
+    }
+    var currentZoom by remember { mutableStateOf(15F) }
+    val parkingAPIClient: PichuParkingAPIClient = remember {
+        PichuParkingAPIClient()
+    }
+    var parkingLotData by remember { mutableStateOf<List<PichuParkingLots>?>(null) }
+    var parkingRates by remember { mutableStateOf<List<PichuParkingRates>?>(null) }
+    var requirePermissionPrompt by remember { mutableStateOf(true) }
 
-@Composable
-fun HorizontalGrid(
-    modifier: Modifier = Modifier, spacing: Dp, content: @Composable () -> Unit
-) {
-    Layout(
-        content = content, modifier = modifier
-    ) { measurables, constraints ->
-        var currentRow = 0
-        var currentOrigin = IntOffset.Zero
-        val spacingValue = spacing.toPx().toInt()
-        val placeables = measurables.map { measurable ->
-            val placeable = measurable.measure(constraints)
+    //Boolean for mapoptions toggle mode
+    val parkingLotIcon = false;
 
-            if (currentOrigin.x > 0f && currentOrigin.x + placeable.width > constraints.maxWidth) {
-                currentRow += 1
-                currentOrigin =
-                    currentOrigin.copy(x = 0, y = currentOrigin.y + placeable.height + spacingValue)
-            }
-
-            placeable to currentOrigin.also {
-                currentOrigin = it.copy(x = it.x + placeable.width + spacingValue)
-            }
+    LaunchedEffect(parkingAPIClient) {
+        parkingRates = parkingAPIClient.getParkingRates()
+    }
+    Box {
+        CheckLocationPermissions(fineLocationPermissionState)
+        DisplayGoogleMaps(
+            cameraPositionState = cameraPositionState,
+            enableLocation = fineLocationPermissionState.allPermissionsGranted,
+            parkingLotData = parkingLotData,
+            parkingRateData = parkingRates,
+        )
+        FloatingActionButton(
+            onClick = {
+                if (fineLocationPermissionState.allPermissionsGranted) {
+                    scope.launch(Dispatchers.IO) {
+                        currentLatLon = fetchCurrentLocation(locationClient)
+                    }
+                    requirePermissionPrompt = false
+                    currentZoom = cameraPositionState.position.zoom
+                    cameraPositionState.move(cameraUpdate(currentLatLon, currentZoom))
+                } else {
+                    Toast.makeText(context, "Location Permissions not enabled", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            },
+            modifier = Modifier
+                .size(75.dp)
+                .padding(16.dp)
+                .align(Alignment.BottomEnd)
+                .clip(CircleShape)
+        ) {
+            Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Current Location")
         }
 
-        layout(width = constraints.maxWidth,
-            height = placeables.lastOrNull()?.run { first.height + second.y } ?: 0) {
-            placeables.forEach {
-                val (placeable, origin) = it
-                placeable.place(origin.x, origin.y)
+    }
+
+    // Define the list of map options with associated actions
+    val mapOptions = listOf(
+        MapOption("Display Markers", R.drawable.test) {
+            // Action for "Display Markers" option
+            if (parkingLotIcon) { //not sure why not reacting
+                scope.launch(Dispatchers.IO) {
+                    parkingLotData = null
+                }
+            }
+            else {
+                scope.launch(Dispatchers.IO) {
+                    parkingLotData = parkingAPIClient.getParkingLots()
+                }
+            }
+
+        },
+//        MapOption("Function 1", R.drawable.ic_function1) {
+//            // Action for "Function 1" option
+//            println("Function 1 selected")
+//        }
+    )
+
+    displayState?.run {
+        MapOptionsScreen(
+            showBottomSheet = showBottomSheet,
+            displayState = this,
+            mapOptions = mapOptions // Pass the list of map options
+        )
+    }
+    LaunchedEffect(showBottomSheet) {
+        if (showBottomSheet) {
+            displayState = BottomSheetDisplayState { newDisplayState ->
+                showBottomSheet = newDisplayState
             }
         }
     }
-}
-
-@Composable
-fun ShowToastMessage(context: Context, message: String, toastLength: Int) {
-    Toast.makeText(context, message, toastLength).show()
-}
-
-@Composable
-fun CraneDrawer(modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .fillMaxSize()
-            .padding(start = 24.dp, top = 48.dp)
-    ) {
-
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MapOptionsButton(
-    options: List<MapOption>, onOptionSelected: (MapOption) -> Unit
-) {
-    var isBottomSheetOpen by remember { mutableStateOf(false) }
-
     Column {
         Button(
-            onClick = { isBottomSheetOpen = true },
+            onClick = { showBottomSheet = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
             Text(text = "Map Options")
-        }
-
-        if (isBottomSheetOpen) {
-            BottomSheetScaffold(
-                sheetContent = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Select an option",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                        LazyRow(
-                            contentPadding = PaddingValues(start = 8.dp, end = 8.dp)
-                        ) {
-                            items(options) { option ->
-                                MapOptionItem(option, onOptionSelected)
-                            }
-                        }
-                    }
-                }, sheetShape = MaterialTheme.shapes.large, sheetContainerColor = Color.White
-            ) {
-                // Main content goes here
-            }
         }
     }
 }
@@ -654,18 +511,54 @@ fun MapOptionItem(option: MapOption, onOptionSelected: (MapOption) -> Unit) {
     }
 }
 
-data class MapOption(val title: String, val iconResId: Int)
+data class MapOption(val title: String, val iconResId: Int, val action: () -> Unit)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MapOptionsScreen(
+    showBottomSheet: Boolean,
+    displayState: BottomSheetDisplayState,
+    mapOptions: List<MapOption> // Pass the list of map options
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val sheetColor = MaterialTheme.colorScheme.primaryContainer
+
+    if (showBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { displayState.onDisplayStateChange(false) },
+            sheetState = sheetState,
+            containerColor = sheetColor,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            FilterOptions(options = mapOptions, onOptionSelected = { selectedOption ->
+                // Handle the selected option here
+                selectedOption.action()
+            })
+        }
+    }
+
+
+}
+
 
 @Composable
-fun MapOptionsScreen() {
-    val mapOptions = listOf(
-        MapOption("Display Markers", R.drawable.test),
-//        MapOption("Function 1", R.drawable.ic_function1),
-//        MapOption("Function 2", R.drawable.ic_function2),
-        // Add more options as needed
-    )
-
-    MapOptionsButton(options = mapOptions, onOptionSelected = { selectedOption ->
-        // Handle the selected option here
-    })
+fun FilterOptions(options: List<MapOption>, onOptionSelected: (MapOption) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Select an option",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(start = 8.dp, end = 8.dp)
+        ) {
+            items(options) { option ->
+                MapOptionItem(option, onOptionSelected)
+            }
+        }
+    }
 }
